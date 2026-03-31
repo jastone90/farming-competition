@@ -1,0 +1,14 @@
+{
+  "name": "farming-competition-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@libsql/client": "^0.17.2",
+    "drizzle-orm": "^0.45.2",
+    "vitest": "^3.2.1"
+  }
+}
