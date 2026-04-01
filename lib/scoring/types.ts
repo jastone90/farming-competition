@@ -2,7 +2,12 @@ export type ActivityType =
   | "ride"
   | "run"
   | "weight_training"
-  | "swimming";
+  | "swimming"
+  | "walk"
+  | "hiking"
+  | "rowing"
+  | "yoga"
+  | "other";
 
 export type RuleType =
   | "base_biking"
