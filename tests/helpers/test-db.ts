@@ -35,6 +35,7 @@ const DDL = `
     duration_minutes REAL,
     elevation_gain_feet REAL,
     calories_burned REAL,
+    pounds_lifted REAL,
     raw_points REAL NOT NULL DEFAULT 0,
     modified_points REAL NOT NULL DEFAULT 0,
     point_breakdown TEXT NOT NULL DEFAULT '{}',

@@ -93,4 +93,47 @@ describe("scoring edge cases", () => {
     // Walk is not ride/run, so general_physical: 3 blocks × 5 = 15
     expect(result.rawPoints).toBe(15);
   });
+
+  it("weight training with poundsLifted=0 falls back to calorie/time", () => {
+    const input: ScoringInput = {
+      type: "weight_training",
+      isIndoor: false,
+      poundsLifted: 0,
+      durationMinutes: 60,
+      caloriesBurned: 400,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // poundsLifted=0 is falsy → falls back, calorie: 400/40 = 10, time: 2×5 = 10 → calorie wins (>=)
+    expect(result.rawPoints).toBe(10);
+  });
+
+  it("weight training without weight_training rule falls back", () => {
+    const rulesWithoutWT: ActiveRule[] = [
+      { ruleType: "general_physical", config: { pointsPer30Min: 5 } },
+      { ruleType: "calorie_scoring", config: { caloriesPerPoint: 40 } },
+    ];
+    const input: ScoringInput = {
+      type: "weight_training",
+      isIndoor: false,
+      poundsLifted: 10000,
+      durationMinutes: 60,
+      caloriesBurned: 400,
+    };
+    const result = scoreActivity(input, rulesWithoutWT);
+    // No weight_training rule → fallback to calorie: 400/40 = 10, time: 2×5 = 10 → calorie
+    expect(result.rawPoints).toBe(10);
+    expect(result.pointBreakdown.base.label).toContain("calorie");
+  });
+
+  it("weight training with only poundsLifted (no duration/calories) scores correctly", () => {
+    const input: ScoringInput = {
+      type: "weight_training",
+      isIndoor: false,
+      poundsLifted: 8000,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // 8000/1000 * 0.5 = 4.0
+    expect(result.rawPoints).toBe(4);
+    expect(result.modifiedPoints).toBe(4);
+  });
 });

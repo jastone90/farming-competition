@@ -17,4 +17,5 @@ export const ALL_RULES: ActiveRule[] = [
       description: "Handicap system - mechanics configurable",
     },
   },
+  { ruleType: "weight_training", config: { pointsPer1000Lbs: 0.5 } },
 ];

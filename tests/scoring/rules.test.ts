@@ -5,6 +5,7 @@ import {
   calculateElevationBonus,
   calculateGeneralPhysical,
   calculateCalorieScoring,
+  calculateWeightTraining,
   applyIndoorModifier,
 } from "@/lib/scoring/rules";
 import type { ScoringInput, RuleConfig } from "@/lib/scoring/types";
@@ -159,6 +160,58 @@ describe("calculateCalorieScoring", () => {
   it("returns null when calories is undefined", () => {
     const input: ScoringInput = { type: "yoga", isIndoor: true };
     expect(calculateCalorieScoring(input, config)).toBeNull();
+  });
+});
+
+describe("calculateWeightTraining", () => {
+  const config: RuleConfig = { pointsPer1000Lbs: 0.5 };
+
+  it("returns 0.5 SFU per 1000 lbs (1 haybail)", () => {
+    const input: ScoringInput = { type: "weight_training", isIndoor: false, poundsLifted: 1000 };
+    const result = calculateWeightTraining(input, config);
+    expect(result).not.toBeNull();
+    expect(result!.points).toBe(0.5);
+    expect(result!.label).toContain("1000");
+    expect(result!.label).toContain("haybail");
+  });
+
+  it("scores 15000 lbs as 7.5 SFU", () => {
+    const input: ScoringInput = { type: "weight_training", isIndoor: false, poundsLifted: 15000 };
+    const result = calculateWeightTraining(input, config);
+    expect(result!.points).toBe(7.5);
+  });
+
+  it("returns null for non-weight_training type", () => {
+    const input: ScoringInput = { type: "run", isIndoor: false, poundsLifted: 5000 };
+    expect(calculateWeightTraining(input, config)).toBeNull();
+  });
+
+  it("returns null when poundsLifted is null", () => {
+    const input: ScoringInput = { type: "weight_training", isIndoor: false, poundsLifted: null };
+    expect(calculateWeightTraining(input, config)).toBeNull();
+  });
+
+  it("returns null when poundsLifted is undefined", () => {
+    const input: ScoringInput = { type: "weight_training", isIndoor: false };
+    expect(calculateWeightTraining(input, config)).toBeNull();
+  });
+
+  it("returns null when poundsLifted is 0", () => {
+    const input: ScoringInput = { type: "weight_training", isIndoor: false, poundsLifted: 0 };
+    expect(calculateWeightTraining(input, config)).toBeNull();
+  });
+
+  it("uses custom pointsPer1000Lbs", () => {
+    const input: ScoringInput = { type: "weight_training", isIndoor: false, poundsLifted: 2000 };
+    const result = calculateWeightTraining(input, { pointsPer1000Lbs: 1 });
+    expect(result!.points).toBe(2);
+  });
+
+  it("rounds to 2 decimal places", () => {
+    const input: ScoringInput = { type: "weight_training", isIndoor: false, poundsLifted: 3333 };
+    const result = calculateWeightTraining(input, config);
+    // 3333 / 1000 * 0.5 = 1.6665 → rounds to 1.67
+    expect(result!.points).toBe(1.67);
   });
 });
 

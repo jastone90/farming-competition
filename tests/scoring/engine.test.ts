@@ -49,7 +49,48 @@ describe("scoreActivity", () => {
     expect(result.modifiedPoints).toBeLessThan(result.rawPoints);
   });
 
-  it("weight training: calorie method wins over time method", () => {
+  it("weight training with poundsLifted uses haybailz scoring", () => {
+    const input: ScoringInput = {
+      type: "weight_training",
+      isIndoor: false,
+      poundsLifted: 10000,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // 10000 / 1000 * 0.5 = 5.0
+    expect(result.rawPoints).toBe(5);
+    expect(result.modifiedPoints).toBe(5);
+    expect(result.pointBreakdown.base.label).toContain("haybail");
+  });
+
+  it("weight training with poundsLifted ignores calories/duration", () => {
+    const input: ScoringInput = {
+      type: "weight_training",
+      isIndoor: false,
+      poundsLifted: 2000,
+      durationMinutes: 120,
+      caloriesBurned: 800,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // Should use haybailz: 2000/1000 * 0.5 = 1.0, NOT calorie (20) or time (20)
+    expect(result.rawPoints).toBe(1);
+    expect(result.pointBreakdown.base.label).toContain("haybail");
+  });
+
+  it("indoor weight training with poundsLifted applies indoor modifier", () => {
+    const input: ScoringInput = {
+      type: "weight_training",
+      isIndoor: true,
+      poundsLifted: 15000,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // raw: 15000/1000 * 0.5 = 7.5, indoor: 7.5 * 0.17 = 1.275 → -1.28
+    expect(result.rawPoints).toBe(7.5);
+    expect(result.modifiedPoints).toBeLessThan(7.5);
+    expect(result.pointBreakdown.indoor).toBeDefined();
+    expect(result.pointBreakdown.base.label).toContain("haybail");
+  });
+
+  it("weight training without poundsLifted falls back to calorie/time scoring", () => {
     const input: ScoringInput = {
       type: "weight_training",
       isIndoor: false,
