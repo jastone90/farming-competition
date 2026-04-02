@@ -1,65 +1,58 @@
 # Farming Competition
 
-A full-stack web app for 4 friends (Alan, Brian, Martin, Will) to track a fitness/mileage competition. Replaces a multi-year Excel spreadsheet with Strava integration, manual activity entry, a constitutional amendment voting system, and historical tracking across seasons (2022–present).
+A full-stack web app that replaces a multi-year Excel spreadsheet used by 4 friends to track a fitness competition. Features Strava integration, manual activity logging, a constitutional amendment voting system, and historical data going back to 2022.
+
+Built as a vibecoding project with Claude Code.
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router), TypeScript
-- **Styling:** Tailwind CSS 4, shadcn/ui-inspired components
-- **Database:** SQLite via Drizzle ORM + libsql
-- **Charts:** Recharts
-- **Auth:** Simple PIN-based (4 users)
-- **Strava:** OAuth2 + webhook subscription for real-time sync
+- **Next.js 16** (App Router) + React 19 + TypeScript
+- **SQLite** via Drizzle ORM (libsql)
+- **Tailwind CSS 4** + shadcn/ui-inspired components
+- **Recharts** for data visualization
+- **Strava OAuth2** for activity sync
+
+## Features
+
+### Dashboard
+Season leaderboard with standings, gap-to-leader stats, weekly pace projections, Hall of Fame (past champions), Hall of Shame (most off-season points), and all-time records.
+
+### Activities
+Grid and sheet views with per-user tables, sortable columns, and points-intensity row highlighting. Manual entry form with live score preview. Strava-imported activities show an "S" badge. Filter by source (Strava/Manual), indoor, or view all.
+
+### Scoring Engine
+Config-driven and versioned. Rules are stored in the database and applied dynamically per season. Every activity gets a transparent `pointBreakdown` showing exactly how points were calculated.
+
+**Current rules (engine v1.3):**
+
+| Activity | Scoring |
+|----------|---------|
+| Running | 4 SFU/mile + 4/300 SFU/ft elevation |
+| Cycling | 1 SFU/mile + 1/300 SFU/ft elevation |
+| Swimming | 25 SFU/mile |
+| Weight Training | 0.5 SFU per haybail (1,000 lbs) |
+
+Seasons run **Jan 1 - Dec 25**. Activities from Dec 26-31 score 0 (off-season).
+
+### Amendments
+A constitutional amendment system for proposing and voting on rule changes. Each amendment goes through a vote (Yee/Nah) and requires a supermajority to pass. The full history of amendments, votes, and rejections is preserved.
+
+### Strava Integration
+OAuth2 flow to connect a Strava account. Manual sync imports activities from the current calendar year, skipping unsupported types (only run, ride, swim, and weight training are competition-eligible). Deduplication by Strava activity ID means re-syncing is safe. Webhook support for real-time sync.
 
 ## Getting Started
 
 ```bash
-# Install dependencies
 npm install
-
-# Seed the database (4 users, amendments, scoring rules, sample activities)
 npm run db:seed
-
-# Start the dev server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. Default users and PINs are configured in the seed script.
-
-## Pages
-
-- **Dashboard** (`/`) — Season leaderboard, weekly progress, stats
-- **Activities** (`/activities`) — Reverse-chron feed, filter by source/type, manual entry with score preview
-- **Amendments** (`/amendments`) — Propose rule changes, vote (Yee/Nah), 3/4 supermajority threshold
-- **History** (`/history`) — Multi-year trend chart, season champions, all-time records
-- **Settings** (`/settings`) — Strava connection, backfill sync, active scoring rules
-
-## Scoring Engine
-
-The scoring engine is config-driven — rules are stored in the database and applied dynamically per season. Each activity gets a transparent `pointBreakdown` JSON showing exactly how points were calculated.
-
-**Base rules:**
-- Biking: 1 point per mile
-- Running: 1 point per mile
-
-**Amendment-derived rules:**
-- Indoor activities receive 83% of outdoor points
-- Outdoor running gets +0.00133333 pts/ft elevation gain
-- General physical activities: 5 pts per 30-min block
-- Calorie-based alternative: 1 pt per 40 calories (uses whichever method scores higher)
-- Martin William Paul Ayers Memorial Handicap (configurable)
-
-**Seasons run Jan 1 – Dec 25.**
-
-## Strava Integration
-
-1. Log in and go to Settings
-2. Click "Connect Strava" to authorize via OAuth2
-3. Activities sync automatically via webhook, or use "Sync Past Activities" for backfill
+Open [http://localhost:3000](http://localhost:3000). Users and PINs are configured in the seed script.
 
 ### Environment Variables
 
-Copy `.env.example` to `.env.local` and fill in your Strava API credentials:
+Create a `.env.local` file:
 
 ```env
 STRAVA_CLIENT_ID=your_client_id
@@ -70,28 +63,49 @@ SESSION_SECRET=your-session-secret
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
+## Project Structure
+
+```
+app/
+  page.tsx                  Dashboard
+  activities/page.tsx       Activities (grid/sheet views)
+  amendments/page.tsx       Amendment proposals & voting
+  settings/page.tsx         Strava connection, scoring rules display
+  login/page.tsx            PIN-based login
+  api/
+    activities/             CRUD + scoring on create
+    leaderboard/            Standings, cumulative points, all-time records
+    amendments/             Proposals, voting
+    scoring/                Calculate, rules, engine versions
+    strava/                 OAuth, sync, webhook
+    auth/                   Login, logout, session
+components/
+  cumulative-chart.tsx      Season-long points chart per user
+  manual-entry-form.tsx     Activity entry with live score preview
+  nav.tsx                   Navigation + dark mode toggle
+  trend-chart.tsx           Trend visualization
+lib/
+  db/
+    schema.ts               7 Drizzle tables
+    scoring-config.ts       Scoring rules & engine versions (source of truth)
+  scoring/
+    engine.ts               Applies rules, handles off-season
+    rules.ts                Individual rule calculators
+    types.ts                TypeScript interfaces
+  strava/
+    client.ts               Strava API client with token refresh
+    mapper.ts               Strava -> internal activity format
+    webhook.ts              Real-time event handler
+  auth.ts                   Cookie-based session management
+```
+
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server |
+| `npm run dev` | Start dev server |
 | `npm run build` | Production build |
-| `npm run db:seed` | Seed database with users, amendments, rules, sample data |
+| `npm run db:seed` | Seed database (users, amendments, scoring rules) |
 | `npm run db:generate` | Generate Drizzle migrations |
 | `npm run db:push` | Push schema to database |
-
-## Project Structure
-
-```
-app/                    Pages and API routes (Next.js App Router)
-components/             Reusable UI components
-lib/
-  db/                   Drizzle schema, connection, seed script
-  scoring/              Config-driven scoring engine
-  strava/               API client, activity mapper, webhook handler
-  auth.ts               PIN-based session auth
-```
-
-## Deploy
-
-Deploy to Vercel or any platform that supports Next.js. The SQLite database file is local — for production, consider switching to Turso (libsql-compatible hosted SQLite).
+| `npm test` | Run test suite |
