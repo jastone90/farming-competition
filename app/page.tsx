@@ -9,23 +9,7 @@ interface LeaderboardEntry {
   color: string;
   totalPoints: number;
   activityCount: number;
-  weeklyActivities: number;
-  weeklyPoints: number;
-}
-
-interface RecentActivity {
-  id: number;
-  userName: string;
-  userColor: string;
-  title: string;
-  type: string;
-  modifiedPoints: number;
-  activityDate: string;
-}
-
-interface Champion {
-  year: number;
-  champion: { name: string; color: string; points: number } | null;
+  totalMiles: number;
 }
 
 interface CumulativeData {
@@ -34,17 +18,14 @@ interface CumulativeData {
   decStartIndex: number;
 }
 
-const typeLabels: Record<string, string> = {
-  ride: "Ride",
-  run: "Run",
-  weight_training: "Haybailz",
-  swimming: "Swim",
-  other: "Other",
-};
+interface Champion {
+  year: number;
+  champion: { name: string; color: string; points: number } | null;
+}
 
-function formatDate(d: string) {
-  const dt = new Date(d + "T00:00:00");
-  return `${dt.getMonth() + 1}/${dt.getDate()}`;
+interface Shamer {
+  year: number;
+  shamer: { name: string; color: string; points: number } | null;
 }
 
 export default function Dashboard() {
@@ -55,8 +36,8 @@ export default function Dashboard() {
     leaderboard: LeaderboardEntry[];
   } | null>(null);
   const [amendmentCount, setAmendmentCount] = useState(0);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [champions, setChampions] = useState<Champion[]>([]);
+  const [shameList, setShameList] = useState<Shamer[]>([]);
   const [cumulative, setCumulative] = useState<CumulativeData | null>(null);
 
   const seasonOptions = Array.from(
@@ -70,13 +51,11 @@ export default function Dashboard() {
 
     Promise.all([
       fetch(`/api/leaderboard?season=${season}`).then((r) => r.json()),
-      fetch(`/api/activities?season=${season}&limit=8`).then((r) => r.json()),
       fetch(`/api/leaderboard/cumulative?season=${season}`).then((r) => r.json()),
       fetch("/api/amendments").then((r) => r.json()),
     ])
-      .then(([leaderboardData, activitiesData, cumulativeData, amendmentsData]) => {
+      .then(([leaderboardData, cumulativeData, amendmentsData]) => {
         setData(leaderboardData);
-        setRecentActivities(activitiesData);
         setCumulative(cumulativeData);
         const voting = amendmentsData.amendments?.filter(
           (a: { status: string }) => a.status === "voting"
@@ -94,7 +73,10 @@ export default function Dashboard() {
   useEffect(() => {
     fetch("/api/leaderboard/history")
       .then((r) => r.json())
-      .then((d) => setChampions(d.champions || []))
+      .then((d) => {
+        setChampions(d.champions || []);
+        setShameList(d.shameList || []);
+      })
       .catch(() => {});
   }, []);
 
@@ -109,7 +91,7 @@ export default function Dashboard() {
   const { leaderboard } = data;
   const maxPoints = Math.max(...leaderboard.map((l) => l.totalPoints), 1);
   const totalActivities = leaderboard.reduce((sum, l) => sum + l.activityCount, 0);
-  const totalWeekly = leaderboard.reduce((s, l) => s + l.weeklyActivities, 0);
+  const totalMiles = leaderboard.reduce((s, l) => s + l.totalMiles, 0);
   const leaderPoints = leaderboard[0]?.totalPoints ?? 0;
 
   const isPastSeason = season < currentYear;
@@ -124,11 +106,14 @@ export default function Dashboard() {
         )
       );
   const progressPct = isPastSeason ? 100 : Math.min((weekNumber / 48) * 100, 100);
-  const showProjected = !isPastSeason && weekNumber >= 4;
 
   // Hall of Fame: only completed seasons with a champion
   const hallOfFame = champions.filter(
     (c) => c.year < currentYear && c.champion !== null
+  );
+
+  const hallOfShame = shameList.filter(
+    (s) => s.year < currentYear && s.shamer !== null
   );
 
   return (
@@ -185,14 +170,9 @@ export default function Dashboard() {
               <th className="border border-border px-2 py-1.5 text-left font-semibold">Competitor</th>
               <th className="border border-border px-2 py-1.5 text-right font-semibold">Total Pts</th>
               <th className="border border-border px-2 py-1.5 text-right font-semibold">Gap</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Pts/Wk</th>
-              {showProjected && (
-                <th className="border border-border px-2 py-1.5 text-right font-semibold">Proj</th>
-              )}
               <th className="border border-border px-2 py-1.5 text-right font-semibold">Acts</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Wk Pts</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Wk Acts</th>
-              <th className="border border-border px-2 py-1.5 text-left font-semibold w-6">Trend</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Pts/Act</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Miles</th>
               <th className="border border-border px-2 py-1.5 text-left font-semibold" style={{ width: "20%" }}>
                 Progress
               </th>
@@ -200,17 +180,10 @@ export default function Dashboard() {
           </thead>
           <tbody>
             {leaderboard.map((entry, i) => {
-              const trend =
-                entry.weeklyPoints > 0
-                  ? "up"
-                  : entry.weeklyPoints === 0
-                    ? "same"
-                    : "down";
               const pct =
                 maxPoints > 0 ? (entry.totalPoints / maxPoints) * 100 : 0;
               const gap = leaderPoints - entry.totalPoints;
-              const pace = weekNumber > 0 ? entry.totalPoints / weekNumber : 0;
-              const projected = pace * 48;
+              const ptsPerAct = entry.activityCount > 0 ? entry.totalPoints / entry.activityCount : 0;
 
               return (
                 <tr
@@ -242,38 +215,13 @@ export default function Dashboard() {
                     {i === 0 ? "\u2013" : `-${gap.toFixed(1)}`}
                   </td>
                   <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                    {pace.toFixed(1)}
-                  </td>
-                  {showProjected && (
-                    <td className="border border-border px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                      {projected.toFixed(0)}
-                    </td>
-                  )}
-                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
                     {entry.activityCount}
                   </td>
                   <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                    {entry.weeklyPoints.toFixed(1)}
+                    {ptsPerAct.toFixed(1)}
                   </td>
                   <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                    {entry.weeklyActivities}
-                  </td>
-                  <td className="border border-border px-2 py-1.5">
-                    <span
-                      className={
-                        trend === "up"
-                          ? "text-green-600 dark:text-green-400 font-bold"
-                          : trend === "down"
-                            ? "text-red-500 font-bold"
-                            : "text-muted-foreground"
-                      }
-                    >
-                      {trend === "up"
-                        ? "\u2191"
-                        : trend === "down"
-                          ? "\u2193"
-                          : "\u2013"}
-                    </span>
+                    {entry.totalMiles.toFixed(0)}
                   </td>
                   <td className="border border-border px-2 py-1.5">
                     <div className="h-3 bg-muted rounded-sm overflow-hidden">
@@ -300,72 +248,21 @@ export default function Dashboard() {
               </td>
               <td className="border border-border px-2 py-1.5"></td>
               <td className="border border-border px-2 py-1.5"></td>
-              {showProjected && (
-                <td className="border border-border px-2 py-1.5"></td>
-              )}
               <td className="border border-border px-2 py-1.5 text-right tabular-nums">
                 {totalActivities}
               </td>
+              <td className="border border-border px-2 py-1.5"></td>
               <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                {leaderboard
-                  .reduce((s, l) => s + l.weeklyPoints, 0)
-                  .toFixed(1)}
+                {totalMiles.toFixed(0)}
               </td>
-              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                {totalWeekly}
-              </td>
-              <td className="border border-border px-2 py-1.5" colSpan={2}></td>
+              <td className="border border-border px-2 py-1.5"></td>
             </tr>
           </tfoot>
         </table>
       </div>
 
-      {/* Two-column: Recent Activity + Hall of Fame */}
+      {/* Hall of Fame + Hall of Shame */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {/* Recent Activity Feed */}
-        <div className="border border-border">
-          <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
-            Recent Activity
-          </div>
-          {recentActivities.length === 0 ? (
-            <div className="px-2 py-3 text-xs text-muted-foreground text-center">
-              No activities yet
-            </div>
-          ) : (
-            <table className="w-full text-xs border-collapse">
-              <tbody>
-                {recentActivities.map((a, i) => (
-                  <tr
-                    key={a.id}
-                    className={`hover:bg-amber-50 dark:hover:bg-amber-950/20 ${
-                      i % 2 === 0 ? "bg-background" : "bg-muted/30"
-                    }`}
-                  >
-                    <td className="border-b border-border px-2 py-1 whitespace-nowrap tabular-nums">
-                      {formatDate(a.activityDate)}
-                    </td>
-                    <td className="border-b border-border px-2 py-1 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1">
-                        <span
-                          className="inline-block h-2 w-2 rounded-full shrink-0"
-                          style={{ backgroundColor: a.userColor }}
-                        />
-                        {a.userName}
-                      </span>
-                    </td>
-                    <td className="border-b border-border px-2 py-1 truncate max-w-[120px]" title={a.title}>
-                      {typeLabels[a.type] || a.type}
-                    </td>
-                    <td className="border-b border-border px-2 py-1 text-right tabular-nums font-semibold text-amber-700 dark:text-amber-400">
-                      {a.modifiedPoints.toFixed(1)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
         {/* Hall of Fame */}
         <div className="border border-border">
           <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
@@ -397,6 +294,46 @@ export default function Dashboard() {
                     </td>
                     <td className="border-b border-border px-2 py-1.5 text-right tabular-nums font-semibold text-amber-700 dark:text-amber-400">
                       {c.champion!.points.toFixed(1)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Hall of Shame */}
+        <div className="border border-border">
+          <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
+            Hall of Shame
+            <span className="font-normal text-muted-foreground ml-1">(Most December pts)</span>
+          </div>
+          {hallOfShame.length === 0 ? (
+            <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+              No data yet
+            </div>
+          ) : (
+            <table className="w-full text-xs border-collapse">
+              <tbody>
+                {hallOfShame.map((s, i) => (
+                  <tr
+                    key={s.year}
+                    className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                  >
+                    <td className="border-b border-border px-2 py-1.5 tabular-nums font-semibold">
+                      {s.year}
+                    </td>
+                    <td className="border-b border-border px-2 py-1.5">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: s.shamer!.color }}
+                        />
+                        {s.shamer!.name}
+                      </span>
+                    </td>
+                    <td className="border-b border-border px-2 py-1.5 text-right tabular-nums font-semibold text-red-600 dark:text-red-400">
+                      {s.shamer!.points.toFixed(1)}
                     </td>
                   </tr>
                 ))}
@@ -440,10 +377,10 @@ export default function Dashboard() {
             </tr>
             <tr className="bg-background">
               <td className="border border-border px-2 py-1.5 font-semibold">
-                This Week
+                Total Miles
               </td>
               <td className="border border-border px-2 py-1.5 tabular-nums">
-                {totalWeekly} activities
+                {totalMiles.toFixed(0)}
               </td>
               <td className="border border-border px-2 py-1.5 font-semibold">
                 Current Week

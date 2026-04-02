@@ -51,6 +51,35 @@ export async function GET() {
     };
   });
 
+  // Get December points per user per season (Hall of Shame)
+  const decemberPoints = await db
+    .select({
+      userId: activities.userId,
+      season: activities.season,
+      decPoints: sql<number>`COALESCE(SUM(${activities.modifiedPoints}), 0)`.as("dec_points"),
+    })
+    .from(activities)
+    .where(sql`substr(${activities.activityDate}, 6, 2) = '12'`)
+    .groupBy(activities.userId, activities.season)
+    .orderBy(activities.season);
+
+  // Find the biggest December scorer per season
+  const shameList = allSeasons.map((s) => {
+    const seasonDec = decemberPoints.filter((p) => p.season === s.year);
+    if (seasonDec.length === 0) return { year: s.year, shamer: null };
+    const worst = seasonDec.reduce((a, b) =>
+      a.decPoints > b.decPoints ? a : b
+    );
+    if (worst.decPoints <= 0) return { year: s.year, shamer: null };
+    const user = allUsers.find((u) => u.id === worst.userId);
+    return {
+      year: s.year,
+      shamer: user
+        ? { name: user.name, color: user.color, points: worst.decPoints }
+        : null,
+    };
+  });
+
   // All-time records
   const bestSeason = await db
     .select({
@@ -72,6 +101,7 @@ export async function GET() {
     chartData,
     users: allUsers,
     champions,
+    shameList,
     records: {
       bestSeason: bestSeason
         ? {
