@@ -1,8 +1,6 @@
 # Farming Competition
 
-A full-stack web app that replaces a multi-year Excel spreadsheet used by 4 friends to track a fitness competition. Features Strava integration, manual activity logging, a constitutional amendment voting system, and historical data going back to 2022.
-
-Built as a vibecoding project with Claude Code.
+A full-stack web app for tracking a fitness competition. Features Strava integration, manual activity logging, a constitutional amendment system, and historical data going back to 2022.
 
 ## Tech Stack
 
@@ -20,25 +18,25 @@ Season leaderboard with standings, gap-to-leader stats, weekly pace projections,
 ### Activities
 Grid and sheet views with per-user tables, sortable columns, and points-intensity row highlighting. Manual entry form with live score preview. Strava-imported activities show an "S" badge. Filter by source (Strava/Manual), indoor, or view all.
 
-### Scoring Engine
-Config-driven and versioned. Rules are stored in the database and applied dynamically per season. Every activity gets a transparent `pointBreakdown` showing exactly how points were calculated.
-
-**Current rules (engine v1.3):**
-
-| Activity | Scoring |
-|----------|---------|
-| Running | 4 SFU/mile + 4/300 SFU/ft elevation |
-| Cycling | 1 SFU/mile + 1/300 SFU/ft elevation |
-| Swimming | 25 SFU/mile |
-| Weight Training | 0.5 SFU per haybail (1,000 lbs) |
-
-Seasons run **Jan 1 - Dec 25**. Activities from Dec 26-31 score 0 (off-season).
-
 ### Amendments
-A constitutional amendment system for proposing and voting on rule changes. Each amendment goes through a vote (Yee/Nah) and requires a supermajority to pass. The full history of amendments, votes, and rejections is preserved.
+A constitutional amendment system for proposing and voting on rule changes. The full history of amendments, votes, and rejections is preserved.
 
 ### Strava Integration
 OAuth2 flow to connect a Strava account. Manual sync imports activities from the current calendar year, skipping unsupported types (only run, ride, swim, and weight training are competition-eligible). Deduplication by Strava activity ID means re-syncing is safe. Webhook support for real-time sync.
+
+## Database Schema
+
+7 tables defined in `lib/db/schema.ts` using Drizzle ORM:
+
+| Table | Description |
+|-------|-------------|
+| `users` | Competitors. Name, PIN, color, and optional Strava OAuth tokens (athlete ID, access/refresh tokens, expiry). |
+| `activities` | Every logged activity. Linked to a user, tracks type (run/ride/swim/weight_training), source (strava/manual), distance, duration, elevation, calories, pounds lifted, computed points (raw + modified), a JSON `point_breakdown`, activity date, season year, and engine version. Strava activities store a `strava_activity_id` for dedup. |
+| `seasons` | One row per competition year. Start/end dates, active flag, and optional champion. |
+| `scoring_rules` | Config-driven scoring rules. Each has a `rule_type`, JSON `config`, active flag, and `effective_season`. Optionally linked to the amendment that created it. |
+| `scoring_engine_versions` | Append-only version log. Tracks version string, summary of changes, and effective date. |
+| `amendments` | Rule change proposals. Number, title, description, proposer, status (voting/approved/rejected/deferred), effective date, season, and voting window. |
+| `votes` | Individual votes on amendments, linked to both the amendment and the voting user. |
 
 ## Getting Started
 
@@ -90,12 +88,16 @@ lib/
     scoring-config.ts       Scoring rules & engine versions (source of truth)
   scoring/
     engine.ts               Applies rules, handles off-season
+    active-rules.ts         Shared DB query for active rules by season
     rules.ts                Individual rule calculators
     types.ts                TypeScript interfaces
   strava/
     client.ts               Strava API client with token refresh
     mapper.ts               Strava -> internal activity format
+    token-manager.ts        Shared token refresh + DB persist
     webhook.ts              Real-time event handler
+  utils/
+    season.ts               Shared season calculation
   auth.ts                   Cookie-based session management
 ```
 
@@ -108,4 +110,4 @@ lib/
 | `npm run db:seed` | Seed database (users, amendments, scoring rules) |
 | `npm run db:generate` | Generate Drizzle migrations |
 | `npm run db:push` | Push schema to database |
-| `npm test` | Run test suite |
+| `npm test` | Run test suite (197 tests) |

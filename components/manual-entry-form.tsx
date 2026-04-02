@@ -18,10 +18,8 @@ interface ManualEntryFormProps {
 export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
   const [type, setType] = useState("run");
   const [title, setTitle] = useState("");
-  const [duration, setDuration] = useState("");
   const [distance, setDistance] = useState("");
   const [elevation, setElevation] = useState("");
-  const [calories, setCalories] = useState("");
   const [poundsLifted, setPoundsLifted] = useState("");
   const [isIndoor, setIsIndoor] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -42,9 +40,7 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
         type,
         isIndoor,
         distanceMiles: distance ? parseFloat(distance) : null,
-        durationMinutes: duration ? parseFloat(duration) : null,
         elevationGainFeet: elevation ? parseFloat(elevation) : null,
-        caloriesBurned: calories ? parseFloat(calories) : null,
         poundsLifted: poundsLifted ? parseFloat(poundsLifted) : null,
       }),
     });
@@ -64,9 +60,7 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
         title: title || activityTypes.find((t) => t.value === type)?.label.split(" ")[0] || "Activity",
         isIndoor,
         distanceMiles: distance ? parseFloat(distance) : null,
-        durationMinutes: duration ? parseFloat(duration) : null,
         elevationGainFeet: elevation ? parseFloat(elevation) : null,
-        caloriesBurned: calories ? parseFloat(calories) : null,
         poundsLifted: poundsLifted ? parseFloat(poundsLifted) : null,
         activityDate: date,
       }),
@@ -125,17 +119,6 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium mb-1 block">
-                Duration (min)
-              </label>
-              <input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">
                 Distance (mi)
               </label>
               <input
@@ -146,9 +129,6 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium mb-1 block">
                 Elevation (ft)
@@ -157,17 +137,6 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
                 type="number"
                 value={elevation}
                 onChange={(e) => setElevation(e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">
-                Calories
-              </label>
-              <input
-                type="number"
-                value={calories}
-                onChange={(e) => setCalories(e.target.value)}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
               />
             </div>

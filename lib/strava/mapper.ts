@@ -1,4 +1,15 @@
+/**
+ * Maps Strava API activity objects to the internal format.
+ *
+ * Only competition-eligible types are mapped (run, ride, swim, weight training).
+ * All other Strava types (walk, hike, yoga, CrossFit, etc.) return null and
+ * are skipped during import. Unit conversions: meters→miles, meters→feet.
+ *
+ * @see lib/scoring/types.ts — ActivityType enum
+ * @see lib/utils/season.ts — shared season calculation
+ */
 import type { ActivityType } from "@/lib/scoring/types";
+import { getSeasonForDate } from "@/lib/utils/season";
 
 interface StravaActivity {
   id: number;
@@ -37,7 +48,7 @@ export function mapStravaActivity(strava: StravaActivity) {
   const caloriesBurned = strava.calories || null;
 
   const actDate = new Date(strava.start_date);
-  const season = actDate.getFullYear();
+  const season = getSeasonForDate(actDate);
 
   return {
     stravaActivityId: String(strava.id),

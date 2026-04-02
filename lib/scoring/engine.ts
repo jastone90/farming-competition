@@ -1,3 +1,14 @@
+/**
+ * Scoring engine — the core of the competition.
+ *
+ * Takes an activity + active rules and produces points with a transparent breakdown.
+ * Two-pass design: base rules first (distance × rate), then elevation bonuses.
+ * Off-season rule (Dec 26–31) short-circuits to 0 before any calculations.
+ *
+ * @see lib/scoring/rules.ts — individual rule calculators
+ * @see lib/scoring/types.ts — TypeScript interfaces
+ * @see lib/db/scoring-config.ts — rule definitions (source of truth)
+ */
 import type { ScoringInput, ActiveRule, ScoringResult, PointBreakdown } from "./types";
 import {
   calculateBaseBiking,
@@ -10,6 +21,7 @@ import { db } from "@/lib/db";
 import { scoringEngineVersions } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 
+/** Returns the latest engine version string from the DB, or "1.0" as fallback. */
 export async function getCurrentEngineVersion(): Promise<string> {
   const row = await db
     .select({ version: scoringEngineVersions.version })
@@ -20,6 +32,11 @@ export async function getCurrentEngineVersion(): Promise<string> {
   return row?.version ?? "1.0";
 }
 
+/**
+ * Score a single activity against the active rules.
+ * Returns raw points, modified points (currently equal), and a breakdown object
+ * that explains exactly how the score was calculated.
+ */
 export function scoreActivity(
   input: ScoringInput,
   rules: ActiveRule[]

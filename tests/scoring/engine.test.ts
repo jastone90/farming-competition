@@ -112,8 +112,8 @@ describe("scoreActivity", () => {
     expect(result.rawPoints).toBe(0);
   });
 
-  it("yoga returns 0 points (no matching rule)", () => {
-    const input: ScoringInput = { type: "yoga", isIndoor: true, durationMinutes: 25 };
+  it("unknown type returns 0 points (no matching rule)", () => {
+    const input: ScoringInput = { type: "other" as any, isIndoor: true, durationMinutes: 25 };
     const result = scoreActivity(input, ALL_RULES);
     expect(result.rawPoints).toBe(0);
     expect(result.modifiedPoints).toBe(0);

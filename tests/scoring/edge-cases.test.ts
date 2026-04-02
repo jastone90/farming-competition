@@ -48,7 +48,7 @@ describe("scoring edge cases", () => {
       { ruleType: "base_running", config: { pointsPerMile: 4 } },
     ];
     const input: ScoringInput = {
-      type: "yoga",
+      type: "swimming" as any, // no swimming rule in baseOnly → scores 0
       isIndoor: false,
       durationMinutes: 60,
       caloriesBurned: 300,

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users, activities, scoringRules } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { users, activities } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import { getStravaActivities, refreshTokenIfNeeded } from "@/lib/strava/client";
+import { getStravaActivities } from "@/lib/strava/client";
+import { ensureFreshTokens } from "@/lib/strava/token-manager";
 import { mapStravaActivity } from "@/lib/strava/mapper";
-import { scoreActivity } from "@/lib/scoring/engine";
-import { getCurrentEngineVersion } from "@/lib/scoring/engine";
-import type { ActiveRule } from "@/lib/scoring/types";
+import { scoreActivity, getCurrentEngineVersion } from "@/lib/scoring/engine";
+import { getActiveRulesForSeason } from "@/lib/scoring/active-rules";
 
 export async function POST() {
   const session = await getSession();
@@ -16,44 +16,31 @@ export async function POST() {
   }
 
   const user = await db.select().from(users).where(eq(users.id, session.id)).get();
-  if (!user?.stravaAccessToken || !user?.stravaRefreshToken || !user?.stravaTokenExpiresAt) {
-    return NextResponse.json({ error: "Strava not connected" }, { status: 400 });
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const tokens = await refreshTokenIfNeeded(
-    user.stravaAccessToken,
-    user.stravaRefreshToken,
-    user.stravaTokenExpiresAt
-  );
-
-  if (!tokens) {
-    return NextResponse.json({ error: "Token refresh failed" }, { status: 500 });
+  const accessToken = await ensureFreshTokens(user);
+  if (!accessToken) {
+    return NextResponse.json({ error: "Strava not connected or token refresh failed" }, { status: 400 });
   }
 
-  // Update tokens
-  if (tokens.accessToken !== user.stravaAccessToken) {
-    await db
-      .update(users)
-      .set({
-        stravaAccessToken: tokens.accessToken,
-        stravaRefreshToken: tokens.refreshToken,
-        stravaTokenExpiresAt: tokens.expiresAt,
-      })
-      .where(eq(users.id, user.id));
-  }
+  const engineVersion = await getCurrentEngineVersion();
+
+  // Fetch rules once per season (cached in Map to avoid N+1 queries)
+  const rulesCache = new Map();
+
+  const now = new Date();
+  const after = Math.floor(new Date(now.getFullYear(), 0, 1).getTime() / 1000);
 
   let imported = 0;
   let skipped = 0;
   const skippedTypes: Record<string, number> = {};
   const importedTypes: Record<string, number> = {};
   let page = 1;
-  const engineVersion = await getCurrentEngineVersion();
-
-  const now = new Date();
-  const after = Math.floor(new Date(now.getFullYear(), 0, 1).getTime() / 1000);
 
   while (true) {
-    const stravaActivities = await getStravaActivities(tokens.accessToken, page, 30, after);
+    const stravaActivities = await getStravaActivities(accessToken, page, 30, after);
     if (!stravaActivities.length) break;
 
     for (const sa of stravaActivities) {
@@ -72,15 +59,11 @@ export async function POST() {
         continue;
       }
 
-      const rules = await db
-        .select()
-        .from(scoringRules)
-        .where(sql`${scoringRules.isActive} = 1 AND ${scoringRules.effectiveSeason} <= ${mapped.season}`);
-
-      const activeRules: ActiveRule[] = rules.map((r) => ({
-        ruleType: r.ruleType,
-        config: JSON.parse(r.config),
-      }));
+      // Get rules for this season (cached to avoid repeated DB queries)
+      if (!rulesCache.has(mapped.season)) {
+        rulesCache.set(mapped.season, await getActiveRulesForSeason(mapped.season));
+      }
+      const activeRules = rulesCache.get(mapped.season);
 
       const result = scoreActivity(
         {

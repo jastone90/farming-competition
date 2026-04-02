@@ -1,3 +1,11 @@
+/**
+ * Cookie-based session management.
+ *
+ * Simple PIN-based auth: users enter name + 4-digit PIN to log in.
+ * Session is stored as an httpOnly cookie containing just the user ID.
+ * No JWT, no server-side session store — the user ID in the cookie is
+ * looked up against the DB on every request via getSession().
+ */
 import { cookies } from "next/headers";
 import { db } from "./db";
 import { users } from "./db/schema";
