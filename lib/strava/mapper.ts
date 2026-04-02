@@ -21,10 +21,6 @@ export function mapStravaActivity(strava: StravaActivity) {
     VirtualRun: { type: "run", indoor: true },
     Swim: { type: "swimming" },
     WeightTraining: { type: "weight_training" },
-    Walk: { type: "walk" },
-    Hike: { type: "hiking" },
-    Rowing: { type: "rowing" },
-    Yoga: { type: "yoga" },
   };
 
   const mapped = typeMap[strava.type];
@@ -41,8 +37,7 @@ export function mapStravaActivity(strava: StravaActivity) {
   const caloriesBurned = strava.calories || null;
 
   const actDate = new Date(strava.start_date);
-  const season =
-    actDate.getMonth() === 0 ? actDate.getFullYear() - 1 : actDate.getFullYear();
+  const season = actDate.getFullYear();
 
   return {
     stravaActivityId: String(strava.id),
