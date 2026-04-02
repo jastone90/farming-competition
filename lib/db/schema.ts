@@ -88,6 +88,7 @@ export const scoringRules = sqliteTable("scoring_rules", {
     enum: [
       "base_biking",
       "base_running",
+      "base_swimming",
       "indoor_modifier",
       "elevation_bonus",
       "general_physical",

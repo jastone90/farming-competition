@@ -18,59 +18,34 @@ describe("scoring edge cases", () => {
       elevationGainFeet: 5000,
     };
     const result = scoreActivity(input, ALL_RULES);
-    // base: 3, elevation: 5000 * 0.00133333 ≈ 6.67
-    expect(result.rawPoints).toBeCloseTo(9.67, 1);
+    // base: 3 * 4 = 12, elevation: 5000 * 0.013 = 65
+    expect(result.rawPoints).toBeCloseTo(77, 1);
   });
 
-  it("29.9 minutes gives 0 blocks", () => {
-    const input: ScoringInput = { type: "yoga", isIndoor: false, durationMinutes: 29.9 };
-    const result = scoreActivity(input, ALL_RULES);
-    expect(result.rawPoints).toBe(0);
-  });
-
-  it("only calorie data available (no duration)", () => {
+  it("swimming with distance scores correctly", () => {
     const input: ScoringInput = {
       type: "swimming",
       isIndoor: false,
-      caloriesBurned: 600,
+      distanceMiles: 0.5,
     };
     const result = scoreActivity(input, ALL_RULES);
-    expect(result.rawPoints).toBe(15); // 600/40
+    expect(result.rawPoints).toBe(12.5); // 0.5 * 25
   });
 
-  it("only duration data available (no calories)", () => {
+  it("swimming without distance scores 0", () => {
     const input: ScoringInput = {
-      type: "hiking",
+      type: "swimming",
       isIndoor: false,
-      durationMinutes: 120,
+      durationMinutes: 45,
     };
     const result = scoreActivity(input, ALL_RULES);
-    expect(result.rawPoints).toBe(20); // 4 blocks × 5
-  });
-
-  it("indoor modifier applied to total including elevation bonus", () => {
-    // Use custom rules where elevation applies to all types
-    const customRules: ActiveRule[] = [
-      { ruleType: "base_running", config: { pointsPerMile: 1 } },
-      { ruleType: "elevation_bonus", config: { pointsPerFoot: 0.01 } }, // no outdoorOnly
-      { ruleType: "indoor_modifier", config: { multiplier: 0.5 } },
-    ];
-    const input: ScoringInput = {
-      type: "run",
-      isIndoor: true,
-      distanceMiles: 10,
-      elevationGainFeet: 100,
-    };
-    const result = scoreActivity(input, customRules);
-    // base: 10, elevation: 1, raw: 11, modifier: -5.5, modified: 5.5
-    expect(result.rawPoints).toBe(11);
-    expect(result.modifiedPoints).toBe(5.5);
+    expect(result.rawPoints).toBe(0);
   });
 
   it("only base rules active means non-ride/run scores 0", () => {
     const baseOnly: ActiveRule[] = [
       { ruleType: "base_biking", config: { pointsPerMile: 1 } },
-      { ruleType: "base_running", config: { pointsPerMile: 1 } },
+      { ruleType: "base_running", config: { pointsPerMile: 4 } },
     ];
     const input: ScoringInput = {
       type: "yoga",
@@ -82,50 +57,18 @@ describe("scoring edge cases", () => {
     expect(result.rawPoints).toBe(0);
   });
 
-  it("walk activity uses general physical scoring", () => {
-    const input: ScoringInput = {
-      type: "walk",
-      isIndoor: false,
-      durationMinutes: 90,
-      distanceMiles: 3,
-    };
-    const result = scoreActivity(input, ALL_RULES);
-    // Walk is not ride/run, so general_physical: 3 blocks × 5 = 15
-    expect(result.rawPoints).toBe(15);
-  });
-
-  it("weight training with poundsLifted=0 falls back to calorie/time", () => {
+  it("weight training with poundsLifted=0 scores 0", () => {
     const input: ScoringInput = {
       type: "weight_training",
       isIndoor: false,
       poundsLifted: 0,
       durationMinutes: 60,
-      caloriesBurned: 400,
     };
     const result = scoreActivity(input, ALL_RULES);
-    // poundsLifted=0 is falsy → falls back, calorie: 400/40 = 10, time: 2×5 = 10 → calorie wins (>=)
-    expect(result.rawPoints).toBe(10);
+    expect(result.rawPoints).toBe(0);
   });
 
-  it("weight training without weight_training rule falls back", () => {
-    const rulesWithoutWT: ActiveRule[] = [
-      { ruleType: "general_physical", config: { pointsPer30Min: 5 } },
-      { ruleType: "calorie_scoring", config: { caloriesPerPoint: 40 } },
-    ];
-    const input: ScoringInput = {
-      type: "weight_training",
-      isIndoor: false,
-      poundsLifted: 10000,
-      durationMinutes: 60,
-      caloriesBurned: 400,
-    };
-    const result = scoreActivity(input, rulesWithoutWT);
-    // No weight_training rule → fallback to calorie: 400/40 = 10, time: 2×5 = 10 → calorie
-    expect(result.rawPoints).toBe(10);
-    expect(result.pointBreakdown.base.label).toContain("calorie");
-  });
-
-  it("weight training with only poundsLifted (no duration/calories) scores correctly", () => {
+  it("weight training with only poundsLifted scores correctly", () => {
     const input: ScoringInput = {
       type: "weight_training",
       isIndoor: false,
@@ -135,5 +78,28 @@ describe("scoring edge cases", () => {
     // 8000/1000 * 0.5 = 4.0
     expect(result.rawPoints).toBe(4);
     expect(result.modifiedPoints).toBe(4);
+  });
+
+  it("ride with elevation bonus scores correctly", () => {
+    const input: ScoringInput = {
+      type: "ride",
+      isIndoor: false,
+      distanceMiles: 20,
+      elevationGainFeet: 1500,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // base: 20 * 1 = 20, elevation: 1500 * 0.003 = 4.5
+    expect(result.rawPoints).toBeCloseTo(24.5, 1);
+  });
+
+  it("indoor activity has no modifier (rawPoints equals modifiedPoints)", () => {
+    const input: ScoringInput = {
+      type: "ride",
+      isIndoor: true,
+      distanceMiles: 15,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    expect(result.rawPoints).toBe(15);
+    expect(result.modifiedPoints).toBe(15);
   });
 });

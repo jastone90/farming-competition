@@ -12,20 +12,10 @@ interface UserInfo {
 interface ScoringRuleInfo {
   id: number;
   ruleType: string;
-  config: Record<string, unknown>;
+  config: Record<string, number | string | boolean>;
   isActive: boolean;
   effectiveSeason: number;
 }
-
-const ruleLabels: Record<string, string> = {
-  base_biking: "Base Biking (1 pt/mi)",
-  base_running: "Base Running (1 pt/mi)",
-  indoor_modifier: "Indoor Modifier (83%)",
-  elevation_bonus: "Elevation Bonus (Running)",
-  general_physical: "General Physical Activity (5 pts/30 min)",
-  calorie_scoring: "Calorie-Based Scoring (1 pt/40 cal)",
-  handicap: "Martin William Paul Ayers Memorial Handicap",
-};
 
 export default function SettingsPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -61,6 +51,63 @@ export default function SettingsPage() {
     }
   }
 
+  // Extract rule configs
+  function getRule(type: string) {
+    return rules.find((r) => r.ruleType === type);
+  }
+  function getAllRules(type: string) {
+    return rules.filter((r) => r.ruleType === type);
+  }
+
+  // Derive values from rules
+  const runPPM = Number(getRule("base_running")?.config.pointsPerMile ?? 4);
+  const bikePPM = Number(getRule("base_biking")?.config.pointsPerMile ?? 1);
+
+  const elevRules = getAllRules("elevation_bonus");
+  const runElevPPF = Number(
+    elevRules.find((r) => r.config.activityType === "run")?.config.pointsPerFoot ?? 0.013
+  );
+  const bikeElevPPF = Number(
+    elevRules.find((r) => r.config.activityType === "ride")?.config.pointsPerFoot ?? 0.003
+  );
+
+  const weightPer1000 = Number(getRule("weight_training")?.config.pointsPer1000Lbs ?? 0.5);
+  const swimPPM = Number(getRule("base_swimming")?.config.pointsPerMile ?? 25);
+
+  const loaded = rules.length > 0;
+
+  function ScoringCard({
+    title,
+    children,
+  }: {
+    title: string;
+    children: React.ReactNode;
+  }) {
+    return (
+      <div className="border border-border rounded-lg overflow-hidden">
+        <div className="px-3 py-2 bg-muted/70 text-sm font-semibold border-b border-border">
+          {title}
+        </div>
+        <div className="px-3 py-3 space-y-2 text-xs">{children}</div>
+      </div>
+    );
+  }
+
+  function Val({ children }: { children: React.ReactNode }) {
+    return (
+      <span className="text-amber-600 dark:text-amber-400 font-semibold">{children}</span>
+    );
+  }
+
+  function FormulaLine({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-mono font-medium">{children}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-4 max-w-full">
       <h1 className="text-lg font-bold mb-3">Settings</h1>
@@ -71,7 +118,7 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Profile & Strava - key-value table */}
+          {/* Profile & Strava */}
           <div className="border border-border">
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -95,10 +142,6 @@ export default function SettingsPage() {
                   </td>
                 </tr>
                 <tr className="bg-muted/30">
-                  <td className="border border-border px-2 py-1.5 font-semibold">User ID</td>
-                  <td className="border border-border px-2 py-1.5 tabular-nums">{user.id}</td>
-                </tr>
-                <tr className="bg-background">
                   <td className="border border-border px-2 py-1.5 font-semibold">Strava Status</td>
                   <td className="border border-border px-2 py-1.5">
                     {user.stravaAthleteId ? (
@@ -115,7 +158,7 @@ export default function SettingsPage() {
                     )}
                   </td>
                 </tr>
-                <tr className="bg-muted/30">
+                <tr className="bg-background">
                   <td className="border border-border px-2 py-1.5 font-semibold">Actions</td>
                   <td className="border border-border px-2 py-1.5">
                     <div className="flex items-center gap-2">
@@ -145,35 +188,72 @@ export default function SettingsPage() {
             </table>
           </div>
 
-          {/* Scoring Rules Table */}
-          <div className="border border-border">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/70">
-                  <th className="border border-border px-2 py-1.5 text-left font-semibold">Scoring Rule</th>
-                  <th className="border border-border px-2 py-1.5 text-left font-semibold">Since</th>
-                  <th className="border border-border px-2 py-1.5 text-center font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rules.map((rule, i) => (
-                  <tr
-                    key={rule.id}
-                    className={`hover:bg-amber-50 dark:hover:bg-amber-950/20 ${
-                      i % 2 === 0 ? "bg-background" : "bg-muted/30"
-                    }`}
-                  >
-                    <td className="border border-border px-2 py-1">
-                      {ruleLabels[rule.ruleType] || rule.ruleType}
-                    </td>
-                    <td className="border border-border px-2 py-1 tabular-nums">{rule.effectiveSeason}</td>
-                    <td className="border border-border px-2 py-1 text-center">
-                      <span className="text-green-600 dark:text-green-400 font-semibold">Active</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Current Scoring Rules */}
+          <div>
+            <div className="text-sm font-semibold mb-2">Scoring Engine</div>
+            {!loaded ? (
+              <div className="text-xs text-muted-foreground">Loading...</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Running */}
+                <ScoringCard title="Running">
+                  <FormulaLine label="Distance">× <Val>{runPPM.toFixed(2)}</Val> pts/mi</FormulaLine>
+                  <FormulaLine label="Elevation">× <Val>{runElevPPF}</Val> pts/ft</FormulaLine>
+                  <div className="border-t border-border pt-2 mt-1">
+                    <div className="text-muted-foreground mb-0.5">Example: 5 mi + 800 ft</div>
+                    <div className="font-mono">
+                      = {(5 * runPPM).toFixed(1)} + {(800 * runElevPPF).toFixed(1)} ={" "}
+                      <span className="font-semibold">
+                        {(5 * runPPM + 800 * runElevPPF).toFixed(1)} SFUs
+                      </span>
+                    </div>
+                  </div>
+                </ScoringCard>
+
+                {/* Cycling */}
+                <ScoringCard title="Cycling">
+                  <FormulaLine label="Distance">× <Val>{bikePPM.toFixed(2)}</Val> pts/mi</FormulaLine>
+                  <FormulaLine label="Elevation">× <Val>{bikeElevPPF}</Val> pts/ft</FormulaLine>
+                  <div className="border-t border-border pt-2 mt-1">
+                    <div className="text-muted-foreground mb-0.5">Example: 20 mi + 1,500 ft</div>
+                    <div className="font-mono">
+                      = {(20 * bikePPM).toFixed(1)} + {(1500 * bikeElevPPF).toFixed(1)} ={" "}
+                      <span className="font-semibold">
+                        {(20 * bikePPM + 1500 * bikeElevPPF).toFixed(1)} SFUs
+                      </span>
+                    </div>
+                  </div>
+                </ScoringCard>
+
+                {/* Weight Training */}
+                <ScoringCard title="Weight Training (Haybailz)">
+                  <FormulaLine label="Pounds">× <Val>{weightPer1000}</Val> pts/1,000 lbs</FormulaLine>
+                  <div className="border-t border-border pt-2 mt-1">
+                    <div className="text-muted-foreground mb-0.5">Example: 12,000 lbs</div>
+                    <div className="font-mono">
+                      ={" "}
+                      <span className="font-semibold">
+                        {((12000 / 1000) * weightPer1000).toFixed(1)} SFUs
+                      </span>
+                    </div>
+                  </div>
+                </ScoringCard>
+
+                {/* Swimming */}
+                <ScoringCard title="Swimming">
+                  <FormulaLine label="Distance">× <Val>{swimPPM.toFixed(2)}</Val> pts/mi</FormulaLine>
+                  <div className="border-t border-border pt-2 mt-1">
+                    <div className="text-muted-foreground mb-0.5">Example: 1 mi</div>
+                    <div className="font-mono">
+                      ={" "}
+                      <span className="font-semibold">
+                        {(1 * swimPPM).toFixed(1)} SFUs
+                      </span>
+                    </div>
+                  </div>
+                </ScoringCard>
+              </div>
+            )}
           </div>
         </div>
       )}

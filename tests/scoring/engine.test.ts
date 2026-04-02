@@ -12,13 +12,11 @@ describe("scoreActivity", () => {
     expect(result.pointBreakdown.base).toBeDefined();
   });
 
-  it("scores an indoor ride with modifier", () => {
+  it("scores an indoor ride (no modifier)", () => {
     const input: ScoringInput = { type: "ride", isIndoor: true, distanceMiles: 15 };
     const result = scoreActivity(input, ALL_RULES);
     expect(result.rawPoints).toBe(15);
-    expect(result.modifiedPoints).toBe(12.45);
-    expect(result.pointBreakdown.indoor).toBeDefined();
-    expect(result.pointBreakdown.indoor.points).toBeLessThan(0);
+    expect(result.modifiedPoints).toBe(15);
   });
 
   it("scores an outdoor run with elevation", () => {
@@ -29,13 +27,14 @@ describe("scoreActivity", () => {
       elevationGainFeet: 320,
     };
     const result = scoreActivity(input, ALL_RULES);
-    expect(result.rawPoints).toBeGreaterThan(5.2);
+    // 5.2 * 4 = 20.8, 320 * 0.013 = 4.16, total = 24.96
+    expect(result.rawPoints).toBe(24.96);
     expect(result.pointBreakdown.base).toBeDefined();
     expect(result.pointBreakdown.elevation).toBeDefined();
     expect(result.modifiedPoints).toBe(result.rawPoints);
   });
 
-  it("scores an indoor run (no elevation bonus)", () => {
+  it("scores an indoor run (no elevation bonus due to outdoorOnly)", () => {
     const input: ScoringInput = {
       type: "run",
       isIndoor: true,
@@ -43,10 +42,23 @@ describe("scoreActivity", () => {
       elevationGainFeet: 200,
     };
     const result = scoreActivity(input, ALL_RULES);
-    expect(result.rawPoints).toBe(5); // no elevation for indoor
+    // 5 * 4 = 20 (no elevation for indoor)
+    expect(result.rawPoints).toBe(20);
     expect(result.pointBreakdown.elevation).toBeUndefined();
-    expect(result.pointBreakdown.indoor).toBeDefined();
-    expect(result.modifiedPoints).toBeLessThan(result.rawPoints);
+    expect(result.modifiedPoints).toBe(result.rawPoints);
+  });
+
+  it("scores an outdoor ride with elevation bonus", () => {
+    const input: ScoringInput = {
+      type: "ride",
+      isIndoor: false,
+      distanceMiles: 20,
+      elevationGainFeet: 1500,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // 20 * 1 = 20, 1500 * 0.003 = 4.5, total = 24.5
+    expect(result.rawPoints).toBe(24.5);
+    expect(result.pointBreakdown.elevation).toBeDefined();
   });
 
   it("weight training with poundsLifted uses haybailz scoring", () => {
@@ -71,78 +83,36 @@ describe("scoreActivity", () => {
       caloriesBurned: 800,
     };
     const result = scoreActivity(input, ALL_RULES);
-    // Should use haybailz: 2000/1000 * 0.5 = 1.0, NOT calorie (20) or time (20)
+    // Should use haybailz: 2000/1000 * 0.5 = 1.0
     expect(result.rawPoints).toBe(1);
     expect(result.pointBreakdown.base.label).toContain("haybail");
   });
 
-  it("indoor weight training with poundsLifted applies indoor modifier", () => {
+  it("swimming scores by distance", () => {
     const input: ScoringInput = {
-      type: "weight_training",
-      isIndoor: true,
-      poundsLifted: 15000,
-    };
-    const result = scoreActivity(input, ALL_RULES);
-    // raw: 15000/1000 * 0.5 = 7.5, indoor: 7.5 * 0.17 = 1.275 → -1.28
-    expect(result.rawPoints).toBe(7.5);
-    expect(result.modifiedPoints).toBeLessThan(7.5);
-    expect(result.pointBreakdown.indoor).toBeDefined();
-    expect(result.pointBreakdown.base.label).toContain("haybail");
-  });
-
-  it("weight training without poundsLifted falls back to calorie/time scoring", () => {
-    const input: ScoringInput = {
-      type: "weight_training",
+      type: "swimming",
       isIndoor: false,
-      durationMinutes: 60,
-      caloriesBurned: 450,
+      distanceMiles: 1.5,
     };
     const result = scoreActivity(input, ALL_RULES);
-    // time: 2 blocks × 5 = 10 pts, calories: 450/40 = 11.25 pts → calorie wins
-    expect(result.rawPoints).toBe(11.25);
-    expect(result.pointBreakdown.base.label).toContain("calorie method");
+    // 1.5 * 25 = 37.5
+    expect(result.rawPoints).toBe(37.5);
+    expect(result.modifiedPoints).toBe(37.5);
+    expect(result.pointBreakdown.base).toBeDefined();
   });
 
-  it("weight training: time method wins over calorie method", () => {
+  it("swimming without distance scores 0", () => {
     const input: ScoringInput = {
-      type: "weight_training",
+      type: "swimming",
       isIndoor: false,
-      durationMinutes: 90,
-      caloriesBurned: 200,
+      durationMinutes: 45,
+      caloriesBurned: 380,
     };
     const result = scoreActivity(input, ALL_RULES);
-    // time: 3 blocks × 5 = 15 pts, calories: 200/40 = 5 pts → time wins
-    expect(result.rawPoints).toBe(15);
-    expect(result.pointBreakdown.base.label).toContain("30-min blocks");
+    expect(result.rawPoints).toBe(0);
   });
 
-  it("weight training: tie goes to calorie method (>=)", () => {
-    const input: ScoringInput = {
-      type: "weight_training",
-      isIndoor: false,
-      durationMinutes: 60,
-      caloriesBurned: 400,
-    };
-    const result = scoreActivity(input, ALL_RULES);
-    // time: 2 blocks × 5 = 10, calories: 400/40 = 10 → calorie wins (>=)
-    expect(result.rawPoints).toBe(10);
-    expect(result.pointBreakdown.base.label).toContain("calorie method");
-  });
-
-  it("indoor weight training applies base + indoor modifier", () => {
-    const input: ScoringInput = {
-      type: "weight_training",
-      isIndoor: true,
-      durationMinutes: 60,
-      caloriesBurned: 450,
-    };
-    const result = scoreActivity(input, ALL_RULES);
-    expect(result.rawPoints).toBe(11.25);
-    expect(result.modifiedPoints).toBeLessThan(result.rawPoints);
-    expect(result.pointBreakdown.indoor).toBeDefined();
-  });
-
-  it("yoga 25min returns 0 points (0 blocks)", () => {
+  it("yoga returns 0 points (no matching rule)", () => {
     const input: ScoringInput = { type: "yoga", isIndoor: true, durationMinutes: 25 };
     const result = scoreActivity(input, ALL_RULES);
     expect(result.rawPoints).toBe(0);
@@ -166,6 +136,5 @@ describe("scoreActivity", () => {
     const result = scoreActivity(input, ALL_RULES);
     expect(Object.keys(result.pointBreakdown)).toContain("base");
     expect(Object.keys(result.pointBreakdown)).toContain("elevation");
-    expect(Object.keys(result.pointBreakdown)).not.toContain("indoor");
   });
 });

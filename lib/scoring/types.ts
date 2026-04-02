@@ -12,10 +12,8 @@ export type ActivityType =
 export type RuleType =
   | "base_biking"
   | "base_running"
-  | "indoor_modifier"
+  | "base_swimming"
   | "elevation_bonus"
-  | "general_physical"
-  | "calorie_scoring"
   | "handicap"
   | "weight_training";
 
@@ -46,13 +44,9 @@ export interface ScoringResult {
 
 export interface RuleConfig {
   pointsPerMile?: number;
-  pointsPer30Min?: number;
-  multiplier?: number;
   pointsPerFoot?: number;
   activityType?: string;
   outdoorOnly?: boolean;
-  caloriesPerPoint?: number;
-  pointsPer40Calories?: number;
   pointsPer1000Lbs?: number;
   name?: string;
   description?: string;
