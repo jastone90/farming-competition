@@ -1,6 +1,6 @@
 # Farming Competition
 
-A full-stack web app for tracking a fitness competition. Features Strava integration, manual activity logging, a constitutional amendment system, and historical data going back to 2022.
+A full-stack web app for tracking a fitness competition. Features Strava integration, manual activity logging, and a constitutional amendment system.
 
 ## Tech Stack
 
