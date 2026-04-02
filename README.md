@@ -24,8 +24,7 @@ npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
+Open [http://localhost:3000](http://localhost:3000) in your browser. Default users and PINs are configured in the seed script.
 
 ## Pages
 
@@ -50,7 +49,7 @@ The scoring engine is config-driven — rules are stored in the database and app
 - Calorie-based alternative: 1 pt per 40 calories (uses whichever method scores higher)
 - Martin William Paul Ayers Memorial Handicap (configurable)
 
-**Seasons run Feb 1 – Dec 31.**
+**Seasons run Jan 1 – Dec 25.**
 
 ## Strava Integration
 
