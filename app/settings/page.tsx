@@ -17,9 +17,18 @@ interface ScoringRuleInfo {
   effectiveSeason: number;
 }
 
+interface EngineVersion {
+  id: number;
+  version: string;
+  summary: string;
+  effectiveDate: string;
+  createdAt: string;
+}
+
 export default function SettingsPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [rules, setRules] = useState<ScoringRuleInfo[]>([]);
+  const [versions, setVersions] = useState<EngineVersion[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
 
@@ -35,6 +44,11 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then(setRules)
       .catch(() => {});
+
+    fetch("/api/scoring/versions")
+      .then((r) => r.json())
+      .then(setVersions)
+      .catch(() => {});
   }, []);
 
   async function handleSync() {
@@ -44,7 +58,16 @@ export default function SettingsPage() {
     setSyncing(false);
     if (res.ok) {
       const data = await res.json();
-      setSyncResult(`Imported ${data.imported} activities`);
+      const typeCounts = Object.entries(data.importedTypes as Record<string, number>)
+        .map(([t, n]) => `${n} ${t}`)
+        .join(", ");
+      const skippedCounts = Object.entries(data.skippedTypes as Record<string, number>)
+        .map(([t, n]) => `${n} ${t}`)
+        .join(", ");
+      let msg = `Imported ${data.imported} activities`;
+      if (typeCounts) msg += ` (${typeCounts})`;
+      if (data.skipped > 0) msg += `, skipped ${data.skipped} unsupported (${skippedCounts})`;
+      setSyncResult(msg);
     } else {
       const data = await res.json();
       setSyncResult(data.error || "Sync failed");
@@ -75,6 +98,7 @@ export default function SettingsPage() {
   const swimPPM = Number(getRule("base_swimming")?.config.pointsPerMile ?? 25);
 
   const loaded = rules.length > 0;
+  const currentVersion = versions.length > 0 ? versions[0].version : "1.0";
 
   function ScoringCard({
     title,
@@ -168,7 +192,7 @@ export default function SettingsPage() {
                           disabled={syncing}
                           className="px-2 py-0.5 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 disabled:opacity-50"
                         >
-                          {syncing ? "Syncing..." : "Sync Past Activities"}
+                          {syncing ? "Syncing..." : "Sync This Year"}
                         </button>
                       ) : (
                         <a
@@ -190,7 +214,12 @@ export default function SettingsPage() {
 
           {/* Current Scoring Rules */}
           <div>
-            <div className="text-sm font-semibold mb-2">Scoring Engine</div>
+            <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+              <span>Scoring Engine</span>
+              <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded">
+                v{currentVersion}
+              </span>
+            </div>
             {!loaded ? (
               <div className="text-xs text-muted-foreground">Loading...</div>
             ) : (
@@ -252,6 +281,35 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </ScoringCard>
+              </div>
+            )}
+
+            {/* Version Audit Log */}
+            {versions.length > 0 && (
+              <div className="mt-4">
+                <div className="text-xs font-semibold mb-1.5 text-muted-foreground">Version History</div>
+                <div className="border border-border">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-muted/70">
+                        <th className="border border-border px-2 py-1.5 text-left font-semibold w-20">Version</th>
+                        <th className="border border-border px-2 py-1.5 text-left font-semibold w-28">Effective</th>
+                        <th className="border border-border px-2 py-1.5 text-left font-semibold">Summary</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {versions.map((v, i) => (
+                        <tr key={v.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                          <td className="border border-border px-2 py-1.5 font-mono font-semibold">v{v.version}</td>
+                          <td className="border border-border px-2 py-1.5">
+                            {new Date(v.effectiveDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </td>
+                          <td className="border border-border px-2 py-1.5">{v.summary}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

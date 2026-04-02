@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import { getStravaActivities, refreshTokenIfNeeded } from "@/lib/strava/client";
 import { mapStravaActivity } from "@/lib/strava/mapper";
 import { scoreActivity } from "@/lib/scoring/engine";
+import { getCurrentEngineVersion } from "@/lib/scoring/engine";
 import type { ActiveRule } from "@/lib/scoring/types";
 
 export async function POST() {
@@ -42,10 +43,17 @@ export async function POST() {
   }
 
   let imported = 0;
+  let skipped = 0;
+  const skippedTypes: Record<string, number> = {};
+  const importedTypes: Record<string, number> = {};
   let page = 1;
+  const engineVersion = await getCurrentEngineVersion();
 
-  while (page <= 5) {
-    const stravaActivities = await getStravaActivities(tokens.accessToken, page, 30);
+  const now = new Date();
+  const after = Math.floor(new Date(now.getFullYear(), 0, 1).getTime() / 1000);
+
+  while (true) {
+    const stravaActivities = await getStravaActivities(tokens.accessToken, page, 30, after);
     if (!stravaActivities.length) break;
 
     for (const sa of stravaActivities) {
@@ -58,7 +66,11 @@ export async function POST() {
       if (existing) continue;
 
       const mapped = mapStravaActivity(sa);
-      if (!mapped) continue; // unsupported activity type
+      if (!mapped) {
+        skipped++;
+        skippedTypes[sa.type] = (skippedTypes[sa.type] || 0) + 1;
+        continue;
+      }
 
       const rules = await db
         .select()
@@ -74,6 +86,7 @@ export async function POST() {
         {
           type: mapped.type,
           isIndoor: mapped.isIndoor,
+          activityDate: mapped.activityDate,
           distanceMiles: mapped.distanceMiles,
           durationMinutes: mapped.durationMinutes,
           elevationGainFeet: mapped.elevationGainFeet,
@@ -89,13 +102,15 @@ export async function POST() {
         rawPoints: result.rawPoints,
         modifiedPoints: result.modifiedPoints,
         pointBreakdown: JSON.stringify(result.pointBreakdown),
+        engineVersion,
       });
 
+      importedTypes[mapped.type] = (importedTypes[mapped.type] || 0) + 1;
       imported++;
     }
 
     page++;
   }
 
-  return NextResponse.json({ imported });
+  return NextResponse.json({ imported, skipped, skippedTypes, importedTypes });
 }

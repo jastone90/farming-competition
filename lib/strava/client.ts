@@ -39,10 +39,19 @@ export async function refreshTokenIfNeeded(
 export async function getStravaActivities(
   accessToken: string,
   page = 1,
-  perPage = 30
+  perPage = 30,
+  after?: number,
+  before?: number,
 ) {
+  const params = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  });
+  if (after) params.set("after", String(after));
+  if (before) params.set("before", String(before));
+
   const res = await fetch(
-    `${STRAVA_API_BASE}/athlete/activities?page=${page}&per_page=${perPage}`,
+    `${STRAVA_API_BASE}/athlete/activities?${params}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (!res.ok) throw new Error(`Strava API error: ${res.status}`);

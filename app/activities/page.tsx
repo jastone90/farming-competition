@@ -220,14 +220,12 @@ function UserMiniTable({
                 <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} />
                 {canDelete && (
                   <td className="border border-border px-1 py-0.5 text-center">
-                    {a.source === "manual" && (
                       <button
                         onClick={() => onDelete(a.id)}
                         className="text-destructive hover:underline leading-none"
                       >
                         x
                       </button>
-                    )}
                   </td>
                 )}
               </tr>
@@ -419,7 +417,7 @@ export default function ActivitiesPage() {
             </button>
           </div>
           <span className="text-xs text-muted-foreground">
-            Feb 1 – Dec 31
+            Jan 1 – Dec 25
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -617,7 +615,7 @@ export default function ActivitiesPage() {
                     </td>
                     <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} className="px-2 py-1" />
                     <td className="border border-border px-2 py-1 text-center">
-                      {a.userId === currentUserId && a.source === "manual" && season === currentYear && (
+                      {a.userId === currentUserId && season === currentYear && (
                         <button
                           onClick={() => handleDelete(a.id)}
                           className="text-destructive hover:underline"

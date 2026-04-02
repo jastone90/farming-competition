@@ -28,8 +28,9 @@ export function mapStravaActivity(strava: StravaActivity) {
   };
 
   const mapped = typeMap[strava.type];
-  const type = mapped?.type ?? "other";
-  const isIndoor = mapped?.indoor || strava.trainer || false;
+  if (!mapped) return null;
+
+  const isIndoor = mapped.indoor || strava.trainer || false;
 
   const distanceMiles = strava.distance > 0 ? strava.distance / 1609.34 : null;
   const elevationGainFeet =
@@ -46,7 +47,7 @@ export function mapStravaActivity(strava: StravaActivity) {
   return {
     stravaActivityId: String(strava.id),
     title: strava.name,
-    type,
+    type: mapped.type,
     isIndoor,
     distanceMiles: distanceMiles ? Math.round(distanceMiles * 100) / 100 : null,
     durationMinutes: Math.round(durationMinutes * 10) / 10,
