@@ -41,6 +41,17 @@ export const activities = sqliteTable("activities", {
   pointBreakdown: text("point_breakdown").notNull().default("{}"),
   activityDate: text("activity_date").notNull(),
   season: integer("season").notNull(),
+  engineVersion: text("engine_version"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export const scoringEngineVersions = sqliteTable("scoring_engine_versions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  version: text("version").notNull(),
+  summary: text("summary").notNull(),
+  effectiveDate: text("effective_date").notNull(),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -119,3 +130,4 @@ export type Amendment = typeof amendments.$inferSelect;
 export type Vote = typeof votes.$inferSelect;
 export type ScoringRule = typeof scoringRules.$inferSelect;
 export type Season = typeof seasons.$inferSelect;
+export type ScoringEngineVersion = typeof scoringEngineVersions.$inferSelect;

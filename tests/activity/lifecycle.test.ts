@@ -149,6 +149,39 @@ describe("activity lifecycle", () => {
     expect(act.stravaActivityId).toBe("12345");
   });
 
+  it("engine version is stored and retrieved in lifecycle", async () => {
+    await createUser(testDb, { name: "Alan" });
+
+    // Score
+    const input: ScoringInput = {
+      type: "run",
+      isIndoor: false,
+      distanceMiles: 3.0,
+    };
+    const scored = scoreActivity(input, ALL_RULES);
+
+    // Store with engine version
+    const act = await createActivity(testDb, {
+      userId: 1,
+      title: "Versioned Run",
+      type: "run",
+      distanceMiles: 3.0,
+      rawPoints: scored.rawPoints,
+      modifiedPoints: scored.modifiedPoints,
+      pointBreakdown: JSON.stringify(scored.pointBreakdown),
+      engineVersion: "1.0",
+    });
+    expect(act.engineVersion).toBe("1.0");
+
+    // Query back — version persists
+    const rows = await testDb.db
+      .select()
+      .from(activities)
+      .where(eq(activities.id, act.id));
+    expect(rows[0].engineVersion).toBe("1.0");
+    expect(rows[0].rawPoints).toBe(scored.rawPoints);
+  });
+
   it("multiple activities per user per day", async () => {
     await createUser(testDb, { name: "Alan" });
     await createActivity(testDb, {

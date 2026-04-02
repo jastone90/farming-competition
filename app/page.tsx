@@ -112,16 +112,16 @@ export default function Dashboard() {
 
   const isPastSeason = season < currentYear;
   const now = new Date();
-  const seasonStart = new Date(season, 1, 1);
+  const seasonStart = new Date(season, 0, 1);
   const weekNumber = isPastSeason
-    ? 48
+    ? 51
     : Math.max(
         1,
         Math.ceil(
           (now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
         )
       );
-  const progressPct = isPastSeason ? 100 : Math.min((weekNumber / 48) * 100, 100);
+  const progressPct = isPastSeason ? 100 : Math.min((weekNumber / 51) * 100, 100);
 
   // Hall of Fame: only completed seasons with a champion
   const hallOfFame = champions.filter(
@@ -166,7 +166,7 @@ export default function Dashboard() {
             </button>
           </div>
           <span className="text-xs text-muted-foreground">
-            Feb 1 – Dec 31 · Week {weekNumber}/48
+            Jan 1 – Dec 25 · Week {weekNumber}/51
           </span>
         </div>
       </div>
@@ -266,7 +266,6 @@ export default function Dashboard() {
               <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
                 {leaderboard.reduce((s, l) => s + l.totalPoints, 0).toFixed(1)}
               </td>
-              <td className="border border-border px-2 py-1.5"></td>
               <td className="border border-border px-2 py-1.5"></td>
               <td className="border border-border px-2 py-1.5 text-right tabular-nums">
                 {totalActivities}

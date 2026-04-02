@@ -41,6 +41,7 @@ const DDL = `
     point_breakdown TEXT NOT NULL DEFAULT '{}',
     activity_date TEXT NOT NULL,
     season INTEGER NOT NULL,
+    engine_version TEXT,
     created_at TEXT NOT NULL
   );
 
@@ -74,6 +75,14 @@ const DDL = `
     config TEXT NOT NULL DEFAULT '{}',
     is_active INTEGER NOT NULL DEFAULT 1,
     effective_season INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS scoring_engine_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    version TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    effective_date TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
 `;

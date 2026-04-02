@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -20,6 +21,13 @@ interface TrendChartProps {
 }
 
 export function TrendChart({ data, users }: TrendChartProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return <div className="h-[300px] sm:h-[400px] w-full" />;
+  }
+
   return (
     <div className="h-[300px] sm:h-[400px] w-full">
       <ResponsiveContainer width="100%" height="100%">

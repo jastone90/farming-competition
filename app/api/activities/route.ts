@@ -4,6 +4,7 @@ import { activities, users } from "@/lib/db/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { scoreActivity } from "@/lib/scoring/engine";
+import { getCurrentEngineVersion } from "@/lib/scoring/engine";
 import { scoringRules } from "@/lib/db/schema";
 import type { ActiveRule } from "@/lib/scoring/types";
 
@@ -87,9 +88,11 @@ export async function POST(request: Request) {
   }));
 
   const result = scoreActivity(
-    { type, isIndoor: isIndoor || false, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted },
+    { type, isIndoor: isIndoor || false, activityDate, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted },
     activeRules
   );
+
+  const engineVersion = await getCurrentEngineVersion();
 
   const [inserted] = await db
     .insert(activities)
@@ -109,6 +112,7 @@ export async function POST(request: Request) {
       pointBreakdown: JSON.stringify(result.pointBreakdown),
       activityDate,
       season,
+      engineVersion,
     })
     .returning();
 

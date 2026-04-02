@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -27,8 +28,15 @@ export function CumulativeChart({
   users,
   decStartIndex,
 }: CumulativeChartProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const decStartDate = decStartIndex >= 0 ? data[decStartIndex]?.date : undefined;
   const lastDate = data[data.length - 1]?.date;
+
+  if (!mounted) {
+    return <div className="h-[300px] w-full" />;
+  }
 
   return (
     <div className="h-[300px] w-full">

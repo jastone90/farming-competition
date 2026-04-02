@@ -20,6 +20,7 @@ export type RuleType =
 export interface ScoringInput {
   type: ActivityType;
   isIndoor: boolean;
+  activityDate?: string | null;
   distanceMiles?: number | null;
   durationMinutes?: number | null;
   elevationGainFeet?: number | null;

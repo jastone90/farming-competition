@@ -8,7 +8,7 @@ import {
   createScoringRule,
   createSeason,
 } from "../helpers/seed-helpers";
-import { users, activities, amendments, votes, scoringRules, seasons } from "@/lib/db/schema";
+import { users, activities, amendments, votes, scoringRules, seasons, scoringEngineVersions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 let testDb: TestDb;
@@ -140,6 +140,34 @@ describe("CRUD operations", () => {
         .where(eq(seasons.year, 2025));
       const rows = await testDb.db.select().from(seasons).where(eq(seasons.year, 2025));
       expect(rows[0].championUserId).toBe(1);
+    });
+  });
+
+  describe("scoring engine versions", () => {
+    it("creates and reads a version", async () => {
+      const now = new Date().toISOString();
+      const [version] = await testDb.db
+        .insert(scoringEngineVersions)
+        .values({
+          version: "1.0",
+          summary: "Initial engine",
+          effectiveDate: "2022-02-01",
+          createdAt: now,
+        })
+        .returning();
+      expect(version.id).toBe(1);
+      expect(version.version).toBe("1.0");
+      expect(version.summary).toBe("Initial engine");
+    });
+
+    it("deletes a version", async () => {
+      const now = new Date().toISOString();
+      await testDb.db
+        .insert(scoringEngineVersions)
+        .values({ version: "1.0", summary: "Test", effectiveDate: "2022-02-01", createdAt: now });
+      await testDb.db.delete(scoringEngineVersions).where(eq(scoringEngineVersions.id, 1));
+      const rows = await testDb.db.select().from(scoringEngineVersions);
+      expect(rows).toHaveLength(0);
     });
   });
 });
