@@ -1,10 +1,17 @@
+/**
+ * Strava webhook event handler.
+ *
+ * Processes real-time activity events (create/update/delete) from Strava.
+ * Uses shared utilities for token management and scoring rules.
+ */
 import { db } from "@/lib/db";
-import { activities, users, scoringRules } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
-import { getStravaActivity, refreshTokenIfNeeded } from "./client";
+import { activities, users } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { getStravaActivity } from "./client";
+import { ensureFreshTokens } from "./token-manager";
 import { mapStravaActivity } from "./mapper";
 import { scoreActivity } from "@/lib/scoring/engine";
-import type { ActiveRule } from "@/lib/scoring/types";
+import { getActiveRulesForSeason } from "@/lib/scoring/active-rules";
 
 export async function handleStravaEvent(event: {
   object_type: string;
@@ -21,29 +28,10 @@ export async function handleStravaEvent(event: {
     .where(eq(users.stravaAthleteId, String(event.owner_id)))
     .get();
 
-  if (!user || !user.stravaAccessToken || !user.stravaRefreshToken || !user.stravaTokenExpiresAt) {
-    return;
-  }
+  if (!user) return;
 
-  const tokens = await refreshTokenIfNeeded(
-    user.stravaAccessToken,
-    user.stravaRefreshToken,
-    user.stravaTokenExpiresAt
-  );
-
-  if (!tokens) return;
-
-  // Update tokens if refreshed
-  if (tokens.accessToken !== user.stravaAccessToken) {
-    await db
-      .update(users)
-      .set({
-        stravaAccessToken: tokens.accessToken,
-        stravaRefreshToken: tokens.refreshToken,
-        stravaTokenExpiresAt: tokens.expiresAt,
-      })
-      .where(eq(users.id, user.id));
-  }
+  const accessToken = await ensureFreshTokens(user);
+  if (!accessToken) return;
 
   if (event.aspect_type === "delete") {
     await db
@@ -59,25 +47,14 @@ export async function handleStravaEvent(event: {
 
   // Fetch activity from Strava
   const stravaActivity = await getStravaActivity(
-    tokens.accessToken,
+    accessToken,
     String(event.object_id)
   );
 
   const mapped = mapStravaActivity(stravaActivity);
   if (!mapped) return; // unsupported activity type
 
-  // Get scoring rules
-  const rules = await db
-    .select()
-    .from(scoringRules)
-    .where(
-      sql`${scoringRules.isActive} = 1 AND ${scoringRules.effectiveSeason} <= ${mapped.season}`
-    );
-
-  const activeRules: ActiveRule[] = rules.map((r) => ({
-    ruleType: r.ruleType,
-    config: JSON.parse(r.config),
-  }));
+  const activeRules = await getActiveRulesForSeason(mapped.season);
 
   const result = scoreActivity(
     {

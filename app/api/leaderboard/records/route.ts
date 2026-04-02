@@ -1,203 +1,131 @@
+/**
+ * All-time records API.
+ *
+ * Returns the best single-activity and season-aggregate records across all users.
+ * Uses two query helpers to avoid repeating the same SELECT/ORDER/LIMIT pattern:
+ *  - topActivity(): best single activity by a given column, optionally filtered
+ *  - topSeasonAggregate(): best user+season group by an aggregate expression
+ */
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { activities, users } from "@/lib/db/schema";
 import { sql, desc, eq, asc } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 
 export async function GET() {
   const allUsers = await db
     .select({ id: users.id, name: users.name, color: users.color })
     .from(users);
 
-  function findUser(userId: number) {
-    return allUsers.find((u) => u.id === userId);
+  const findUser = (userId: number) => allUsers.find((u) => u.id === userId);
+
+  // --- Query helpers ---
+
+  /** Best single activity by a column, with optional WHERE filter */
+  async function topActivity(
+    valueCol: any,
+    where?: SQL
+  ) {
+    let query = db
+      .select({
+        userId: activities.userId,
+        title: activities.title,
+        value: valueCol,
+        date: activities.activityDate,
+        season: activities.season,
+      })
+      .from(activities);
+    if (where) query = query.where(where) as typeof query;
+    return query.orderBy(desc(valueCol)).limit(1).get();
   }
 
-  // --- Single Activity Records ---
+  /** Best user+season group by an aggregate, with optional WHERE and sort direction */
+  async function topSeasonAggregate(
+    aggExpr: SQL<number>,
+    options?: { where?: SQL; direction?: "desc" | "asc" }
+  ) {
+    const { where, direction = "desc" } = options ?? {};
+    let query = db
+      .select({
+        userId: activities.userId,
+        season: activities.season,
+        total: aggExpr.as("total"),
+      })
+      .from(activities);
+    if (where) query = query.where(where) as typeof query;
+    return query
+      .groupBy(activities.userId, activities.season)
+      .orderBy(direction === "desc" ? desc(sql`total`) : asc(sql`total`))
+      .limit(1)
+      .get();
+  }
 
-  // Highest scoring activity
-  const highestScoring = await db
-    .select({
-      userId: activities.userId,
-      title: activities.title,
-      points: activities.modifiedPoints,
-      date: activities.activityDate,
-      season: activities.season,
-    })
-    .from(activities)
-    .orderBy(desc(activities.modifiedPoints))
-    .limit(1)
-    .get();
+  // --- Queries ---
 
-  // Longest ride (by distance)
-  const longestRide = await db
-    .select({
-      userId: activities.userId,
-      title: activities.title,
-      distance: activities.distanceMiles,
-      date: activities.activityDate,
-      season: activities.season,
-    })
-    .from(activities)
-    .where(eq(activities.type, "ride"))
-    .orderBy(desc(activities.distanceMiles))
-    .limit(1)
-    .get();
+  const [
+    highestScoring,
+    longestRide,
+    longestRun,
+    mountainGoat,
+    heaviestHaybailz,
+    mostPointsSeason,
+    mostActivitiesSeason,
+    mostMilesSeason,
+    mostElevationSeason,
+    biggestDecember,
+    leastPointsSeason,
+    highestIndividualMonth,
+    highestMonth,
+  ] = await Promise.all([
+    // Single activity records
+    topActivity(activities.modifiedPoints),
+    topActivity(activities.distanceMiles, eq(activities.type, "ride")),
+    topActivity(activities.distanceMiles, eq(activities.type, "run")),
+    topActivity(activities.elevationGainFeet),
+    topActivity(activities.poundsLifted, sql`${activities.poundsLifted} > 0`),
 
-  // Longest run (by distance)
-  const longestRun = await db
-    .select({
-      userId: activities.userId,
-      title: activities.title,
-      distance: activities.distanceMiles,
-      date: activities.activityDate,
-      season: activities.season,
-    })
-    .from(activities)
-    .where(eq(activities.type, "run"))
-    .orderBy(desc(activities.distanceMiles))
-    .limit(1)
-    .get();
+    // Season aggregates
+    topSeasonAggregate(sql<number>`SUM(${activities.modifiedPoints})`),
+    topSeasonAggregate(sql<number>`COUNT(${activities.id})`),
+    topSeasonAggregate(sql<number>`COALESCE(SUM(${activities.distanceMiles}), 0)`),
+    topSeasonAggregate(sql<number>`COALESCE(SUM(${activities.elevationGainFeet}), 0)`),
 
-  // Mountain goat (most elevation in single activity)
-  const mountainGoat = await db
-    .select({
-      userId: activities.userId,
-      title: activities.title,
-      elevation: activities.elevationGainFeet,
-      date: activities.activityDate,
-      season: activities.season,
-    })
-    .from(activities)
-    .orderBy(desc(activities.elevationGainFeet))
-    .limit(1)
-    .get();
+    // Dubious honors
+    topSeasonAggregate(
+      sql<number>`COALESCE(SUM(${activities.modifiedPoints}), 0)`,
+      { where: sql`substr(${activities.activityDate}, 6, 2) = '12'` }
+    ),
+    topSeasonAggregate(
+      sql<number>`SUM(${activities.modifiedPoints})`,
+      { where: sql`${activities.season} < ${new Date().getFullYear()}`, direction: "asc" }
+    ),
 
-  // Heaviest haybailz (most pounds lifted)
-  const heaviestHaybailz = await db
-    .select({
-      userId: activities.userId,
-      title: activities.title,
-      pounds: activities.poundsLifted,
-      date: activities.activityDate,
-      season: activities.season,
-    })
-    .from(activities)
-    .where(sql`${activities.poundsLifted} > 0`)
-    .orderBy(desc(activities.poundsLifted))
-    .limit(1)
-    .get();
-
-  // --- Season Records ---
-
-  // Most points in a season
-  const mostPointsSeason = await db
-    .select({
-      userId: activities.userId,
-      season: activities.season,
-      total: sql<number>`SUM(${activities.modifiedPoints})`.as("total"),
-    })
-    .from(activities)
-    .groupBy(activities.userId, activities.season)
-    .orderBy(desc(sql`total`))
-    .limit(1)
-    .get();
-
-  // Most activities in a season
-  const mostActivitiesSeason = await db
-    .select({
-      userId: activities.userId,
-      season: activities.season,
-      total: sql<number>`COUNT(${activities.id})`.as("total"),
-    })
-    .from(activities)
-    .groupBy(activities.userId, activities.season)
-    .orderBy(desc(sql`total`))
-    .limit(1)
-    .get();
-
-  // Most miles in a season
-  const mostMilesSeason = await db
-    .select({
-      userId: activities.userId,
-      season: activities.season,
-      total: sql<number>`COALESCE(SUM(${activities.distanceMiles}), 0)`.as("total"),
-    })
-    .from(activities)
-    .groupBy(activities.userId, activities.season)
-    .orderBy(desc(sql`total`))
-    .limit(1)
-    .get();
-
-  // Most elevation in a season
-  const mostElevationSeason = await db
-    .select({
-      userId: activities.userId,
-      season: activities.season,
-      total: sql<number>`COALESCE(SUM(${activities.elevationGainFeet}), 0)`.as("total"),
-    })
-    .from(activities)
-    .groupBy(activities.userId, activities.season)
-    .orderBy(desc(sql`total`))
-    .limit(1)
-    .get();
-
-  // --- Dubious Honors ---
-
-  // Biggest December offender (single season)
-  const biggestDecember = await db
-    .select({
-      userId: activities.userId,
-      season: activities.season,
-      total: sql<number>`COALESCE(SUM(${activities.modifiedPoints}), 0)`.as("total"),
-    })
-    .from(activities)
-    .where(sql`substr(${activities.activityDate}, 6, 2) = '12'`)
-    .groupBy(activities.userId, activities.season)
-    .orderBy(desc(sql`total`))
-    .limit(1)
-    .get();
-
-  // Least points in a season (completed seasons only — exclude current year)
-  const currentYear = new Date().getFullYear();
-  const leastPointsSeason = await db
-    .select({
-      userId: activities.userId,
-      season: activities.season,
-      total: sql<number>`SUM(${activities.modifiedPoints})`.as("total"),
-    })
-    .from(activities)
-    .where(sql`${activities.season} < ${currentYear}`)
-    .groupBy(activities.userId, activities.season)
-    .orderBy(asc(sql`total`))
-    .limit(1)
-    .get();
-
-  // --- Highest Scoring Month (single competitor) ---
-  const highestIndividualMonth = await db
-    .select({
+    // Monthly records
+    db.select({
       userId: activities.userId,
       season: activities.season,
       month: sql<string>`substr(${activities.activityDate}, 1, 7)`.as("month"),
       total: sql<number>`COALESCE(SUM(${activities.modifiedPoints}), 0)`.as("total"),
     })
-    .from(activities)
-    .groupBy(activities.userId, sql`substr(${activities.activityDate}, 1, 7)`)
-    .orderBy(desc(sql`total`))
-    .limit(1)
-    .get();
+      .from(activities)
+      .groupBy(activities.userId, sql`substr(${activities.activityDate}, 1, 7)`)
+      .orderBy(desc(sql`total`))
+      .limit(1)
+      .get(),
 
-  // --- Highest Output Month (all competitors combined) ---
-  const highestMonth = await db
-    .select({
+    db.select({
       season: activities.season,
       month: sql<string>`substr(${activities.activityDate}, 1, 7)`.as("month"),
       total: sql<number>`COALESCE(SUM(${activities.modifiedPoints}), 0)`.as("total"),
     })
-    .from(activities)
-    .groupBy(sql`substr(${activities.activityDate}, 1, 7)`)
-    .orderBy(desc(sql`total`))
-    .limit(1)
-    .get();
+      .from(activities)
+      .groupBy(sql`substr(${activities.activityDate}, 1, 7)`)
+      .orderBy(desc(sql`total`))
+      .limit(1)
+      .get(),
+  ]);
+
+  // --- Response formatting ---
 
   function buildRecord(
     row: { userId: number; season: number } | null | undefined,
@@ -215,58 +143,34 @@ export async function GET() {
     };
   }
 
+  function activityRecord(row: typeof highestScoring) {
+    return row ? buildRecord(row, row.value, { title: row.title, date: row.date }) : null;
+  }
+
+  function seasonRecord(row: typeof mostPointsSeason) {
+    return row ? buildRecord(row, row.total) : null;
+  }
+
   return NextResponse.json({
-    // Single activity records
-    highestScoring: highestScoring
-      ? buildRecord(highestScoring, highestScoring.points, { title: highestScoring.title, date: highestScoring.date })
-      : null,
-    longestRide: longestRide
-      ? buildRecord(longestRide, longestRide.distance, { title: longestRide.title, date: longestRide.date })
-      : null,
-    longestRun: longestRun
-      ? buildRecord(longestRun, longestRun.distance, { title: longestRun.title, date: longestRun.date })
-      : null,
-    mountainGoat: mountainGoat
-      ? buildRecord(mountainGoat, mountainGoat.elevation, { title: mountainGoat.title, date: mountainGoat.date })
-      : null,
-    heaviestHaybailz: heaviestHaybailz
-      ? buildRecord(heaviestHaybailz, heaviestHaybailz.pounds, { title: heaviestHaybailz.title, date: heaviestHaybailz.date })
-      : null,
+    highestScoring: activityRecord(highestScoring),
+    longestRide: activityRecord(longestRide),
+    longestRun: activityRecord(longestRun),
+    mountainGoat: activityRecord(mountainGoat),
+    heaviestHaybailz: activityRecord(heaviestHaybailz),
 
-    // Season records
-    mostPointsSeason: mostPointsSeason
-      ? buildRecord(mostPointsSeason, mostPointsSeason.total)
-      : null,
-    mostActivitiesSeason: mostActivitiesSeason
-      ? buildRecord(mostActivitiesSeason, mostActivitiesSeason.total)
-      : null,
-    mostMilesSeason: mostMilesSeason
-      ? buildRecord(mostMilesSeason, mostMilesSeason.total)
-      : null,
-    mostElevationSeason: mostElevationSeason
-      ? buildRecord(mostElevationSeason, mostElevationSeason.total)
-      : null,
+    mostPointsSeason: seasonRecord(mostPointsSeason),
+    mostActivitiesSeason: seasonRecord(mostActivitiesSeason),
+    mostMilesSeason: seasonRecord(mostMilesSeason),
+    mostElevationSeason: seasonRecord(mostElevationSeason),
 
-    // Dubious honors
-    biggestDecember: biggestDecember
-      ? buildRecord(biggestDecember, biggestDecember.total)
-      : null,
-    leastPointsSeason: leastPointsSeason
-      ? buildRecord(leastPointsSeason, leastPointsSeason.total)
-      : null,
+    biggestDecember: seasonRecord(biggestDecember),
+    leastPointsSeason: seasonRecord(leastPointsSeason),
 
-    // Combined
     highestIndividualMonth: highestIndividualMonth
-      ? {
-          ...buildRecord(highestIndividualMonth, highestIndividualMonth.total),
-          month: highestIndividualMonth.month,
-        }
+      ? { ...buildRecord(highestIndividualMonth, highestIndividualMonth.total), month: highestIndividualMonth.month }
       : null,
     highestMonth: highestMonth
-      ? {
-          month: highestMonth.month,
-          total: highestMonth.total,
-        }
+      ? { month: highestMonth.month, total: highestMonth.total }
       : null,
   });
 }

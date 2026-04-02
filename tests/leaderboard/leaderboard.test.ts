@@ -144,7 +144,7 @@ describe("leaderboard", () => {
     await createUser(testDb, { name: "Alan" });
     await createActivity(testDb, { userId: 1, title: "Run", type: "run", modifiedPoints: 5 });
     await createActivity(testDb, { userId: 1, title: "Ride", type: "ride", modifiedPoints: 15 });
-    await createActivity(testDb, { userId: 1, title: "Yoga", type: "yoga", modifiedPoints: 10 });
+    await createActivity(testDb, { userId: 1, title: "Swim", type: "swimming", modifiedPoints: 10 });
 
     const board = await getLeaderboard(testDb, 2026);
     expect(board[0].activityCount).toBe(3);

@@ -1,3 +1,16 @@
+/**
+ * Individual scoring rule calculators.
+ *
+ * Each function takes a ScoringInput + RuleConfig and returns a BreakdownItem
+ * (label + points) or null if the rule doesn't apply to this activity type.
+ *
+ * Current rules (engine v1.3):
+ *   Running:  4 SFU/mile + 4/300 SFU/ft elevation
+ *   Cycling:  1 SFU/mile + 1/300 SFU/ft elevation
+ *   Swimming: 25 SFU/mile
+ *   Weights:  0.5 SFU per haybail (1,000 lbs)
+ *   Elevation applies to all activities (indoor and outdoor).
+ */
 import type { ScoringInput, RuleConfig, BreakdownItem } from "./types";
 
 export function calculateBaseBiking(

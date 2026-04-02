@@ -1,21 +1,24 @@
+/** Competition-eligible activity types (must match DB schema enum) */
 export type ActivityType =
   | "ride"
   | "run"
   | "weight_training"
-  | "swimming"
-  | "walk"
-  | "hiking"
-  | "rowing"
-  | "yoga"
-  | "other";
+  | "swimming";
 
+/**
+ * All scoring rule types that can exist in the database.
+ * Only a subset are active at any time — see lib/db/scoring-config.ts.
+ */
 export type RuleType =
   | "base_biking"
   | "base_running"
   | "base_swimming"
   | "elevation_bonus"
   | "handicap"
-  | "weight_training";
+  | "weight_training"
+  | "indoor_modifier"
+  | "general_physical"
+  | "calorie_scoring";
 
 export interface ScoringInput {
   type: ActivityType;

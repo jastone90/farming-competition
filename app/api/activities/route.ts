@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { activities, users } from "@/lib/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import { scoreActivity } from "@/lib/scoring/engine";
-import { getCurrentEngineVersion } from "@/lib/scoring/engine";
-import { scoringRules } from "@/lib/db/schema";
-import type { ActiveRule } from "@/lib/scoring/types";
+import { scoreActivity, getCurrentEngineVersion } from "@/lib/scoring/engine";
+import { getActiveRulesForSeason } from "@/lib/scoring/active-rules";
+import { getSeasonForDate } from "@/lib/utils/season";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -73,19 +72,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Type and date are required" }, { status: 400 });
   }
 
-  const actDate = new Date(activityDate);
-  const season = actDate.getMonth() === 0 ? actDate.getFullYear() - 1 : actDate.getFullYear();
+  // Season = calendar year of the activity date
+  const season = getSeasonForDate(activityDate);
 
-  // Get active rules for this season
-  const rules = await db
-    .select()
-    .from(scoringRules)
-    .where(and(eq(scoringRules.isActive, true), sql`${scoringRules.effectiveSeason} <= ${season}`));
-
-  const activeRules: ActiveRule[] = rules.map((r) => ({
-    ruleType: r.ruleType,
-    config: JSON.parse(r.config),
-  }));
+  const activeRules = await getActiveRulesForSeason(season);
 
   const result = scoreActivity(
     { type, isIndoor: isIndoor || false, activityDate, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted },
