@@ -1,7 +1,9 @@
 /**
  * Scoring configuration — tracked in git.
  * This is the source of truth for scoring rules and engine versions.
- * The seed script (gitignored) uses these values to populate the DB.
+ *
+ * IMPORTANT: When updating rules or versions here, also update
+ * lib/db/seed.ts (gitignored) to keep the seed script in sync.
  */
 
 export const scoringRules = [
