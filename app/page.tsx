@@ -35,7 +35,6 @@ export default function Dashboard() {
     season: number;
     leaderboard: LeaderboardEntry[];
   } | null>(null);
-  const [amendmentCount, setAmendmentCount] = useState(0);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [shameList, setShameList] = useState<Shamer[]>([]);
   const [cumulative, setCumulative] = useState<CumulativeData | null>(null);
@@ -52,15 +51,10 @@ export default function Dashboard() {
     Promise.all([
       fetch(`/api/leaderboard?season=${season}`).then((r) => r.json()),
       fetch(`/api/leaderboard/cumulative?season=${season}`).then((r) => r.json()),
-      fetch("/api/amendments").then((r) => r.json()),
     ])
-      .then(([leaderboardData, cumulativeData, amendmentsData]) => {
+      .then(([leaderboardData, cumulativeData]) => {
         setData(leaderboardData);
         setCumulative(cumulativeData);
-        const voting = amendmentsData.amendments?.filter(
-          (a: { status: string }) => a.status === "voting"
-        );
-        setAmendmentCount(voting?.length || 0);
       })
       .catch(console.error);
   }, [season]);
@@ -357,41 +351,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Stats Row */}
-      <div className="border border-border">
-        <table className="w-full text-xs border-collapse">
-          <tbody>
-            <tr className="bg-muted/30">
-              <td className="border border-border px-2 py-1.5 font-semibold w-1/4">
-                Active Votes
-              </td>
-              <td className="border border-border px-2 py-1.5 tabular-nums">
-                {amendmentCount}
-              </td>
-              <td className="border border-border px-2 py-1.5 font-semibold w-1/4">
-                Total Activities
-              </td>
-              <td className="border border-border px-2 py-1.5 tabular-nums">
-                {totalActivities}
-              </td>
-            </tr>
-            <tr className="bg-background">
-              <td className="border border-border px-2 py-1.5 font-semibold">
-                Total Miles
-              </td>
-              <td className="border border-border px-2 py-1.5 tabular-nums">
-                {totalMiles.toFixed(0)}
-              </td>
-              <td className="border border-border px-2 py-1.5 font-semibold">
-                Current Week
-              </td>
-              <td className="border border-border px-2 py-1.5 tabular-nums">
-                W{weekNumber}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
