@@ -26,6 +26,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Activity not found or not yours" }, { status: 404 });
   }
 
+  const currentYear = new Date().getFullYear();
+  if (activity.season !== currentYear) {
+    return NextResponse.json({ error: "Cannot delete activities from past seasons" }, { status: 403 });
+  }
+
   await db.delete(activities).where(and(eq(activities.id, activityId), eq(activities.userId, session.id)));
   return NextResponse.json({ success: true });
 }

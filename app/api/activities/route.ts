@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const source = url.searchParams.get("source");
   const userId = url.searchParams.get("userId");
   const indoor = url.searchParams.get("indoor");
-  const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+  const limit = parseInt(url.searchParams.get("limit") || "5000", 10);
 
   const conditions = [];
   if (season) conditions.push(eq(activities.season, parseInt(season)));

@@ -1,65 +1,460 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState, useCallback } from "react";
+import { CumulativeChart } from "@/components/cumulative-chart";
+
+interface LeaderboardEntry {
+  userId: number;
+  name: string;
+  color: string;
+  totalPoints: number;
+  activityCount: number;
+  weeklyActivities: number;
+  weeklyPoints: number;
+}
+
+interface RecentActivity {
+  id: number;
+  userName: string;
+  userColor: string;
+  title: string;
+  type: string;
+  modifiedPoints: number;
+  activityDate: string;
+}
+
+interface Champion {
+  year: number;
+  champion: { name: string; color: string; points: number } | null;
+}
+
+interface CumulativeData {
+  data: { date: string; [userName: string]: string | number | null }[];
+  users: { name: string; color: string }[];
+  decStartIndex: number;
+}
+
+const typeLabels: Record<string, string> = {
+  ride: "Ride",
+  run: "Run",
+  weight_training: "Haybailz",
+  swimming: "Swim",
+  other: "Other",
+};
+
+function formatDate(d: string) {
+  const dt = new Date(d + "T00:00:00");
+  return `${dt.getMonth() + 1}/${dt.getDate()}`;
+}
+
+export default function Dashboard() {
+  const currentYear = new Date().getFullYear();
+  const [season, setSeason] = useState(currentYear);
+  const [data, setData] = useState<{
+    season: number;
+    leaderboard: LeaderboardEntry[];
+  } | null>(null);
+  const [amendmentCount, setAmendmentCount] = useState(0);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [champions, setChampions] = useState<Champion[]>([]);
+  const [cumulative, setCumulative] = useState<CumulativeData | null>(null);
+
+  const seasonOptions = Array.from(
+    { length: currentYear - 2022 + 1 },
+    (_, i) => 2022 + i
+  ).reverse();
+
+  // Season-dependent fetches
+  const loadSeason = useCallback(() => {
+    setData(null);
+
+    Promise.all([
+      fetch(`/api/leaderboard?season=${season}`).then((r) => r.json()),
+      fetch(`/api/activities?season=${season}&limit=8`).then((r) => r.json()),
+      fetch(`/api/leaderboard/cumulative?season=${season}`).then((r) => r.json()),
+      fetch("/api/amendments").then((r) => r.json()),
+    ])
+      .then(([leaderboardData, activitiesData, cumulativeData, amendmentsData]) => {
+        setData(leaderboardData);
+        setRecentActivities(activitiesData);
+        setCumulative(cumulativeData);
+        const voting = amendmentsData.amendments?.filter(
+          (a: { status: string }) => a.status === "voting"
+        );
+        setAmendmentCount(voting?.length || 0);
+      })
+      .catch(console.error);
+  }, [season]);
+
+  useEffect(() => {
+    loadSeason();
+  }, [loadSeason]);
+
+  // Hall of Fame — fetch once on mount
+  useEffect(() => {
+    fetch("/api/leaderboard/history")
+      .then((r) => r.json())
+      .then((d) => setChampions(d.champions || []))
+      .catch(() => {});
+  }, []);
+
+  if (!data) {
+    return (
+      <div className="text-center text-muted-foreground py-8 text-sm">
+        Loading...
+      </div>
+    );
+  }
+
+  const { leaderboard } = data;
+  const maxPoints = Math.max(...leaderboard.map((l) => l.totalPoints), 1);
+  const totalActivities = leaderboard.reduce((sum, l) => sum + l.activityCount, 0);
+  const totalWeekly = leaderboard.reduce((s, l) => s + l.weeklyActivities, 0);
+  const leaderPoints = leaderboard[0]?.totalPoints ?? 0;
+
+  const isPastSeason = season < currentYear;
+  const now = new Date();
+  const seasonStart = new Date(season, 1, 1);
+  const weekNumber = isPastSeason
+    ? 48
+    : Math.max(
+        1,
+        Math.ceil(
+          (now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
+        )
+      );
+  const progressPct = isPastSeason ? 100 : Math.min((weekNumber / 48) * 100, 100);
+  const showProjected = !isPastSeason && weekNumber >= 4;
+
+  // Hall of Fame: only completed seasons with a champion
+  const hallOfFame = champions.filter(
+    (c) => c.year < currentYear && c.champion !== null
+  );
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="px-4 py-4 max-w-full">
+      {/* Season Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold">Dashboard</h1>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setSeason((s) => Math.max(2022, s - 1))}
+              disabled={season <= 2022}
+              className="px-1.5 py-0.5 text-xs font-bold border border-border bg-background hover:bg-muted disabled:opacity-30"
+            >
+              &lt;
+            </button>
+            <select
+              value={season}
+              onChange={(e) => setSeason(Number(e.target.value))}
+              className="px-2 py-0.5 text-sm font-bold border border-border bg-background tabular-nums"
+            >
+              {seasonOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setSeason((s) => Math.min(currentYear, s + 1))}
+              disabled={season >= currentYear}
+              className="px-1.5 py-0.5 text-xs font-bold border border-border bg-background hover:bg-muted disabled:opacity-30"
+            >
+              &gt;
+            </button>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            Feb 1 – Dec 31 · Week {weekNumber}/48
+          </span>
+        </div>
+      </div>
+      <div className="h-1 bg-muted mb-4 border border-border">
+        <div
+          className="h-full bg-amber-600 dark:bg-amber-500"
+          style={{ width: `${progressPct}%` }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </div>
+
+      {/* Standings Table */}
+      <div className="border border-border mb-4">
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="bg-muted/70">
+              <th className="border border-border px-2 py-1.5 text-left font-semibold w-8">#</th>
+              <th className="border border-border px-2 py-1.5 text-left font-semibold">Competitor</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Total Pts</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Gap</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Pts/Wk</th>
+              {showProjected && (
+                <th className="border border-border px-2 py-1.5 text-right font-semibold">Proj</th>
+              )}
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Acts</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Wk Pts</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Wk Acts</th>
+              <th className="border border-border px-2 py-1.5 text-left font-semibold w-6">Trend</th>
+              <th className="border border-border px-2 py-1.5 text-left font-semibold" style={{ width: "20%" }}>
+                Progress
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {leaderboard.map((entry, i) => {
+              const trend =
+                entry.weeklyPoints > 0
+                  ? "up"
+                  : entry.weeklyPoints === 0
+                    ? "same"
+                    : "down";
+              const pct =
+                maxPoints > 0 ? (entry.totalPoints / maxPoints) * 100 : 0;
+              const gap = leaderPoints - entry.totalPoints;
+              const pace = weekNumber > 0 ? entry.totalPoints / weekNumber : 0;
+              const projected = pace * 48;
+
+              return (
+                <tr
+                  key={entry.userId}
+                  className={`hover:bg-amber-50 dark:hover:bg-amber-950/20 ${
+                    i === 0
+                      ? "bg-amber-50/50 dark:bg-amber-950/10 font-semibold"
+                      : i % 2 === 0
+                        ? "bg-background"
+                        : "bg-muted/30"
+                  }`}
+                >
+                  <td className="border border-border px-2 py-1.5 tabular-nums">
+                    {i + 1}
+                  </td>
+                  <td className="border border-border px-2 py-1.5">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className="inline-block h-3 w-3 rounded-full shrink-0"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      {entry.name}
+                    </span>
+                  </td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
+                    {entry.totalPoints.toFixed(1)}
+                  </td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+                    {i === 0 ? "\u2013" : `-${gap.toFixed(1)}`}
+                  </td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                    {pace.toFixed(1)}
+                  </td>
+                  {showProjected && (
+                    <td className="border border-border px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+                      {projected.toFixed(0)}
+                    </td>
+                  )}
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                    {entry.activityCount}
+                  </td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                    {entry.weeklyPoints.toFixed(1)}
+                  </td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                    {entry.weeklyActivities}
+                  </td>
+                  <td className="border border-border px-2 py-1.5">
+                    <span
+                      className={
+                        trend === "up"
+                          ? "text-green-600 dark:text-green-400 font-bold"
+                          : trend === "down"
+                            ? "text-red-500 font-bold"
+                            : "text-muted-foreground"
+                      }
+                    >
+                      {trend === "up"
+                        ? "\u2191"
+                        : trend === "down"
+                          ? "\u2193"
+                          : "\u2013"}
+                    </span>
+                  </td>
+                  <td className="border border-border px-2 py-1.5">
+                    <div className="h-3 bg-muted rounded-sm overflow-hidden">
+                      <div
+                        className="h-full rounded-sm"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor: entry.color,
+                        }}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="bg-muted/70 font-semibold">
+              <td className="border border-border px-2 py-1.5" colSpan={2}>
+                TOTALS
+              </td>
+              <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
+                {leaderboard.reduce((s, l) => s + l.totalPoints, 0).toFixed(1)}
+              </td>
+              <td className="border border-border px-2 py-1.5"></td>
+              <td className="border border-border px-2 py-1.5"></td>
+              {showProjected && (
+                <td className="border border-border px-2 py-1.5"></td>
+              )}
+              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                {totalActivities}
+              </td>
+              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                {leaderboard
+                  .reduce((s, l) => s + l.weeklyPoints, 0)
+                  .toFixed(1)}
+              </td>
+              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                {totalWeekly}
+              </td>
+              <td className="border border-border px-2 py-1.5" colSpan={2}></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      {/* Two-column: Recent Activity + Hall of Fame */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Recent Activity Feed */}
+        <div className="border border-border">
+          <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
+            Recent Activity
+          </div>
+          {recentActivities.length === 0 ? (
+            <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+              No activities yet
+            </div>
+          ) : (
+            <table className="w-full text-xs border-collapse">
+              <tbody>
+                {recentActivities.map((a, i) => (
+                  <tr
+                    key={a.id}
+                    className={`hover:bg-amber-50 dark:hover:bg-amber-950/20 ${
+                      i % 2 === 0 ? "bg-background" : "bg-muted/30"
+                    }`}
+                  >
+                    <td className="border-b border-border px-2 py-1 whitespace-nowrap tabular-nums">
+                      {formatDate(a.activityDate)}
+                    </td>
+                    <td className="border-b border-border px-2 py-1 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1">
+                        <span
+                          className="inline-block h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: a.userColor }}
+                        />
+                        {a.userName}
+                      </span>
+                    </td>
+                    <td className="border-b border-border px-2 py-1 truncate max-w-[120px]" title={a.title}>
+                      {typeLabels[a.type] || a.type}
+                    </td>
+                    <td className="border-b border-border px-2 py-1 text-right tabular-nums font-semibold text-amber-700 dark:text-amber-400">
+                      {a.modifiedPoints.toFixed(1)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Hall of Fame */}
+        <div className="border border-border">
+          <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
+            Hall of Fame
+          </div>
+          {hallOfFame.length === 0 ? (
+            <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+              No champions yet
+            </div>
+          ) : (
+            <table className="w-full text-xs border-collapse">
+              <tbody>
+                {hallOfFame.map((c, i) => (
+                  <tr
+                    key={c.year}
+                    className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}
+                  >
+                    <td className="border-b border-border px-2 py-1.5 tabular-nums font-semibold">
+                      {c.year}
+                    </td>
+                    <td className="border-b border-border px-2 py-1.5">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: c.champion!.color }}
+                        />
+                        {c.champion!.name}
+                      </span>
+                    </td>
+                    <td className="border-b border-border px-2 py-1.5 text-right tabular-nums font-semibold text-amber-700 dark:text-amber-400">
+                      {c.champion!.points.toFixed(1)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      </main>
+      </div>
+
+      {/* Cumulative Points Chart */}
+      {cumulative && cumulative.data.length > 0 && (
+        <div className="border border-border mb-4 p-3">
+          <div className="text-xs font-semibold mb-2">
+            Cumulative Points — {season}
+          </div>
+          <CumulativeChart
+            data={cumulative.data}
+            users={cumulative.users}
+            decStartIndex={cumulative.decStartIndex}
+          />
+        </div>
+      )}
+
+      {/* Stats Row */}
+      <div className="border border-border">
+        <table className="w-full text-xs border-collapse">
+          <tbody>
+            <tr className="bg-muted/30">
+              <td className="border border-border px-2 py-1.5 font-semibold w-1/4">
+                Active Votes
+              </td>
+              <td className="border border-border px-2 py-1.5 tabular-nums">
+                {amendmentCount}
+              </td>
+              <td className="border border-border px-2 py-1.5 font-semibold w-1/4">
+                Total Activities
+              </td>
+              <td className="border border-border px-2 py-1.5 tabular-nums">
+                {totalActivities}
+              </td>
+            </tr>
+            <tr className="bg-background">
+              <td className="border border-border px-2 py-1.5 font-semibold">
+                This Week
+              </td>
+              <td className="border border-border px-2 py-1.5 tabular-nums">
+                {totalWeekly} activities
+              </td>
+              <td className="border border-border px-2 py-1.5 font-semibold">
+                Current Week
+              </td>
+              <td className="border border-border px-2 py-1.5 tabular-nums">
+                W{weekNumber}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
