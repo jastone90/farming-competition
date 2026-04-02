@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { CumulativeChart } from "@/components/cumulative-chart";
 
 interface LeaderboardEntry {
   userId: number;
@@ -10,12 +9,7 @@ interface LeaderboardEntry {
   totalPoints: number;
   activityCount: number;
   totalMiles: number;
-}
-
-interface CumulativeData {
-  data: { date: string; [userName: string]: string | number | null }[];
-  users: { name: string; color: string }[];
-  decStartIndex: number;
+  totalElevation: number;
 }
 
 interface Champion {
@@ -28,6 +22,31 @@ interface Shamer {
   shamer: { name: string; color: string; points: number } | null;
 }
 
+interface RecordEntry {
+  holder: string;
+  color: string;
+  value: number;
+  season: number;
+  title?: string;
+  date?: string;
+}
+
+interface Records {
+  highestScoring: RecordEntry | null;
+  longestRide: RecordEntry | null;
+  longestRun: RecordEntry | null;
+  mountainGoat: RecordEntry | null;
+  heaviestHaybailz: RecordEntry | null;
+  mostPointsSeason: RecordEntry | null;
+  mostActivitiesSeason: RecordEntry | null;
+  mostMilesSeason: RecordEntry | null;
+  mostElevationSeason: RecordEntry | null;
+  biggestDecember: RecordEntry | null;
+  leastPointsSeason: RecordEntry | null;
+  highestMonth: { month: string; total: number } | null;
+  highestIndividualMonth: { holder: string; color: string; value: number; season: number; month: string } | null;
+}
+
 export default function Dashboard() {
   const currentYear = new Date().getFullYear();
   const [season, setSeason] = useState(currentYear);
@@ -37,7 +56,7 @@ export default function Dashboard() {
   } | null>(null);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [shameList, setShameList] = useState<Shamer[]>([]);
-  const [cumulative, setCumulative] = useState<CumulativeData | null>(null);
+  const [records, setRecords] = useState<Records | null>(null);
 
   const seasonOptions = Array.from(
     { length: currentYear - 2022 + 1 },
@@ -48,13 +67,10 @@ export default function Dashboard() {
   const loadSeason = useCallback(() => {
     setData(null);
 
-    Promise.all([
-      fetch(`/api/leaderboard?season=${season}`).then((r) => r.json()),
-      fetch(`/api/leaderboard/cumulative?season=${season}`).then((r) => r.json()),
-    ])
-      .then(([leaderboardData, cumulativeData]) => {
+    fetch(`/api/leaderboard?season=${season}`)
+      .then((r) => r.json())
+      .then((leaderboardData) => {
         setData(leaderboardData);
-        setCumulative(cumulativeData);
       })
       .catch(console.error);
   }, [season]);
@@ -72,6 +88,11 @@ export default function Dashboard() {
         setShameList(d.shameList || []);
       })
       .catch(() => {});
+
+    fetch("/api/leaderboard/records")
+      .then((r) => r.json())
+      .then((d) => setRecords(d))
+      .catch(() => {});
   }, []);
 
   if (!data) {
@@ -86,6 +107,7 @@ export default function Dashboard() {
   const maxPoints = Math.max(...leaderboard.map((l) => l.totalPoints), 1);
   const totalActivities = leaderboard.reduce((sum, l) => sum + l.activityCount, 0);
   const totalMiles = leaderboard.reduce((s, l) => s + l.totalMiles, 0);
+  const totalElevation = leaderboard.reduce((s, l) => s + l.totalElevation, 0);
   const leaderPoints = leaderboard[0]?.totalPoints ?? 0;
 
   const isPastSeason = season < currentYear;
@@ -167,6 +189,7 @@ export default function Dashboard() {
               <th className="border border-border px-2 py-1.5 text-right font-semibold">Acts</th>
               <th className="border border-border px-2 py-1.5 text-right font-semibold">Pts/Act</th>
               <th className="border border-border px-2 py-1.5 text-right font-semibold">Miles</th>
+              <th className="border border-border px-2 py-1.5 text-right font-semibold">Elev</th>
               <th className="border border-border px-2 py-1.5 text-left font-semibold" style={{ width: "20%" }}>
                 Progress
               </th>
@@ -217,6 +240,9 @@ export default function Dashboard() {
                   <td className="border border-border px-2 py-1.5 text-right tabular-nums">
                     {entry.totalMiles.toFixed(0)}
                   </td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                    {entry.totalElevation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </td>
                   <td className="border border-border px-2 py-1.5">
                     <div className="h-3 bg-muted rounded-sm overflow-hidden">
                       <div
@@ -248,6 +274,9 @@ export default function Dashboard() {
               <td className="border border-border px-2 py-1.5"></td>
               <td className="border border-border px-2 py-1.5 text-right tabular-nums">
                 {totalMiles.toFixed(0)}
+              </td>
+              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                {totalElevation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </td>
               <td className="border border-border px-2 py-1.5"></td>
             </tr>
@@ -337,20 +366,180 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cumulative Points Chart */}
-      {cumulative && cumulative.data.length > 0 && (
-        <div className="border border-border mb-4 p-3">
-          <div className="text-xs font-semibold mb-2">
-            Cumulative Points — {season}
+      {/* All-Time Records */}
+      {records && (
+        <div className="border border-border mb-4">
+          <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
+            All-Time Records
           </div>
-          <CumulativeChart
-            data={cumulative.data}
-            users={cumulative.users}
-            decStartIndex={cumulative.decStartIndex}
-          />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {/* Single Activity Records */}
+            <RecordCard
+              icon="🏆"
+              label="Highest Scoring Activity"
+              record={records.highestScoring}
+              format={(v) => `${Number(v).toFixed(1)} pts`}
+              showTitle
+            />
+            <RecordCard
+              icon="🚴"
+              label="Longest Ride"
+              record={records.longestRide}
+              format={(v) => `${Number(v).toFixed(1)} mi`}
+              showTitle
+            />
+            <RecordCard
+              icon="🏃"
+              label="Longest Run"
+              record={records.longestRun}
+              format={(v) => `${Number(v).toFixed(1)} mi`}
+              showTitle
+            />
+            <RecordCard
+              icon="⛰️"
+              label="Mountain Goat"
+              record={records.mountainGoat}
+              format={(v) => `${Number(v).toLocaleString()} ft`}
+              showTitle
+            />
+            <RecordCard
+              icon="🏋️"
+              label="Heaviest Haybailz"
+              record={records.heaviestHaybailz}
+              format={(v) => `${Number(v).toLocaleString()} lbs`}
+              showTitle
+            />
+
+            {/* Season Records */}
+            <RecordCard
+              icon="🥇"
+              label="Most Points (Season)"
+              record={records.mostPointsSeason}
+              format={(v) => `${Number(v).toFixed(1)} pts`}
+            />
+            <RecordCard
+              icon="📊"
+              label="Most Activities (Season)"
+              record={records.mostActivitiesSeason}
+              format={(v) => `${Number(v)} acts`}
+            />
+            <RecordCard
+              icon="🛣️"
+              label="Most Miles (Season)"
+              record={records.mostMilesSeason}
+              format={(v) => `${Number(v).toFixed(0)} mi`}
+            />
+            <RecordCard
+              icon="🧗"
+              label="Most Elevation (Season)"
+              record={records.mostElevationSeason}
+              format={(v) => `${Number(v).toLocaleString()} ft`}
+            />
+
+            {/* Dubious Honors */}
+            <RecordCard
+              icon="😈"
+              label="December Offender"
+              record={records.biggestDecember}
+              format={(v) => `${Number(v).toFixed(1)} pts`}
+            />
+            <RecordCard
+              icon="🐌"
+              label="Least Points (Season)"
+              record={records.leastPointsSeason}
+              format={(v) => `${Number(v).toFixed(1)} pts`}
+            />
+
+            {/* Highest Output Month */}
+            {records.highestIndividualMonth && (
+              <div className="border border-border p-2">
+                <div className="text-[10px] text-muted-foreground leading-tight mb-1">
+                  🗓️ Best Month (Individual)
+                </div>
+                <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                  {Number(records.highestIndividualMonth.value).toFixed(1)} pts
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span
+                    className="inline-block h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: records.highestIndividualMonth.color }}
+                  />
+                  <span className="text-[10px] text-foreground font-medium truncate">
+                    {records.highestIndividualMonth.holder}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
+                    {formatMonth(records.highestIndividualMonth.month)}
+                  </span>
+                </div>
+              </div>
+            )}
+            {records.highestMonth && (
+              <div className="border border-border p-2">
+                <div className="text-[10px] text-muted-foreground leading-tight mb-1">
+                  🔥 Highest Output Month
+                </div>
+                <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                  {Number(records.highestMonth.total).toFixed(1)} pts
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {formatMonth(records.highestMonth.month)} · All competitors
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
+    </div>
+  );
+}
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatMonth(ym: string) {
+  const [year, month] = ym.split("-");
+  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`;
+}
+
+function RecordCard({
+  icon,
+  label,
+  record,
+  format,
+  showTitle,
+}: {
+  icon: string;
+  label: string;
+  record: RecordEntry | null;
+  format: (v: number) => string;
+  showTitle?: boolean;
+}) {
+  if (!record) return null;
+  return (
+    <div className="border border-border p-2">
+      <div className="text-[10px] text-muted-foreground leading-tight mb-1">
+        {icon} {label}
+      </div>
+      <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">
+        {format(record.value)}
+      </div>
+      <div className="flex items-center gap-1 mt-0.5">
+        <span
+          className="inline-block h-2 w-2 rounded-full shrink-0"
+          style={{ backgroundColor: record.color }}
+        />
+        <span className="text-[10px] text-foreground font-medium truncate">
+          {record.holder}
+        </span>
+        <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
+          {record.season}
+        </span>
+      </div>
+      {showTitle && record.title && (
+        <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+          {record.title}
+        </div>
+      )}
     </div>
   );
 }

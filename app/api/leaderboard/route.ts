@@ -14,6 +14,7 @@ export async function GET(request: Request) {
       totalPoints: sql<number>`COALESCE(SUM(${activities.modifiedPoints}), 0)`.as("total_points"),
       activityCount: sql<number>`COUNT(${activities.id})`.as("activity_count"),
       totalMiles: sql<number>`COALESCE(SUM(${activities.distanceMiles}), 0)`.as("total_miles"),
+      totalElevation: sql<number>`COALESCE(SUM(${activities.elevationGainFeet}), 0)`.as("total_elevation"),
     })
     .from(activities)
     .where(eq(activities.season, season))
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
       totalPoints: standing?.totalPoints ?? 0,
       activityCount: standing?.activityCount ?? 0,
       totalMiles: standing?.totalMiles ?? 0,
+      totalElevation: standing?.totalElevation ?? 0,
     };
   });
 
