@@ -41,6 +41,14 @@ yarn-error.log*
 *.db-journal
 /drizzle
 
+# seed data & history (contains personal info)
+lib/db/seed.ts
+lib/db/seed-history.ts
+/History
+tests/helpers/seed-helpers.ts
+tests/db/seed-verification.test.ts
+tests/scoring/seed-points.test.ts
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
