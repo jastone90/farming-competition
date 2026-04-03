@@ -31,6 +31,10 @@ export default function SettingsPage() {
   const [versions, setVersions] = useState<EngineVersion[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [pinMsg, setPinMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -71,6 +75,28 @@ export default function SettingsPage() {
     } else {
       const data = await res.json();
       setSyncResult(data.error || "Sync failed");
+    }
+  }
+
+  async function handleChangePin(e: React.FormEvent) {
+    e.preventDefault();
+    setPinMsg(null);
+    const res = await fetch("/api/auth/pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPin, newPin }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setPinMsg({ text: "PIN updated", ok: true });
+      setCurrentPin("");
+      setNewPin("");
+      setTimeout(() => {
+        setShowPinModal(false);
+        setPinMsg(null);
+      }, 1000);
+    } else {
+      setPinMsg({ text: data.error || "Failed to change PIN", ok: false });
     }
   }
 
@@ -192,7 +218,7 @@ export default function SettingsPage() {
                           disabled={syncing}
                           className="px-2 py-0.5 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 disabled:opacity-50"
                         >
-                          {syncing ? "Syncing..." : "Sync This Year"}
+                          {syncing ? "Syncing..." : `Strava\u2122 Sync ${new Date().getFullYear()}`}
                         </button>
                       ) : (
                         <a
@@ -202,6 +228,12 @@ export default function SettingsPage() {
                           Connect Strava
                         </a>
                       )}
+                      <button
+                        onClick={() => { setShowPinModal(true); setPinMsg(null); setCurrentPin(""); setNewPin(""); }}
+                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
+                      >
+                        Change PIN
+                      </button>
                       {syncResult && (
                         <span className="text-muted-foreground">{syncResult}</span>
                       )}
@@ -312,6 +344,61 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Change PIN Modal */}
+      {showPinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowPinModal(false)}>
+          <div className="bg-card border border-border shadow-lg w-72 p-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-bold mb-3">Change PIN</h2>
+            <form onSubmit={handleChangePin} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold block mb-1">Current PIN</label>
+                <input
+                  type="password"
+                  maxLength={4}
+                  value={currentPin}
+                  onChange={(e) => setCurrentPin(e.target.value)}
+                  placeholder="----"
+                  className="w-full border border-input bg-background px-2 py-1.5 text-sm text-center tracking-widest"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold block mb-1">New PIN</label>
+                <input
+                  type="password"
+                  maxLength={4}
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  placeholder="----"
+                  className="w-full border border-input bg-background px-2 py-1.5 text-sm text-center tracking-widest"
+                />
+              </div>
+              {pinMsg && (
+                <p className={`text-xs font-medium ${pinMsg.ok ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                  {pinMsg.text}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={currentPin.length < 4 || newPin.length < 4}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 border border-primary disabled:opacity-50"
+                >
+                  Update
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPinModal(false)}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium border border-input hover:bg-muted"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
