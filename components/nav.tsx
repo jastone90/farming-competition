@@ -99,12 +99,13 @@ export function Nav() {
 
           {user ? (
             <div className="flex items-center gap-2">
-              <div
-                className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+              <Link
+                href={`/profile/${user.id}`}
+                className="h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-bold hover:ring-2 hover:ring-amber-400 transition-all"
                 style={{ backgroundColor: user.color }}
               >
                 {user.name[0]}
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-xs text-muted-foreground hover:text-foreground"

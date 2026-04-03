@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 
 interface LeaderboardEntry {
   userId: number;
@@ -240,13 +241,13 @@ export default function Dashboard() {
                     {i + 1}
                   </td>
                   <td className="border border-border px-2 py-1.5">
-                    <span className="inline-flex items-center gap-1.5">
+                    <Link href={`/profile/${entry.userId}`} className="inline-flex items-center gap-1.5 hover:underline">
                       <span
                         className="inline-block h-3 w-3 rounded-full shrink-0"
                         style={{ backgroundColor: entry.color }}
                       />
                       {entry.name}
-                    </span>
+                    </Link>
                   </td>
                   <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
                     {entry.totalPoints.toFixed(1)}
