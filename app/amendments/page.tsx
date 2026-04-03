@@ -212,7 +212,7 @@ export default function AmendmentsPage() {
                           </th>
                         ))}
                         <th className="border border-border px-2 py-1 text-center font-semibold">Tally</th>
-                        <th className="border border-border px-2 py-1 text-center font-semibold">{yeeCount}/3</th>
+                        <th className="border border-border px-2 py-1 text-center font-semibold">{yeeCount}/{Math.ceil(allUsers.length * 3 / 4)}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -229,7 +229,7 @@ export default function AmendmentsPage() {
                           <div className="h-2 bg-muted rounded-sm overflow-hidden">
                             <div
                               className="h-full bg-amber-500 rounded-sm"
-                              style={{ width: `${(yeeCount / 3) * 100}%` }}
+                              style={{ width: `${(yeeCount / Math.ceil(allUsers.length * 3 / 4)) * 100}%` }}
                             />
                           </div>
                         </td>
@@ -329,9 +329,6 @@ export default function AmendmentsPage() {
                       <td className="border border-border px-2 py-1 tabular-nums">{a.number}</td>
                       <td className="border border-border px-2 py-1 max-w-[300px]">
                         <span className="truncate block">{a.title}</span>
-                        {a.rejectionCommentary && (
-                          <span className="text-red-500 font-bold block">{a.rejectionCommentary}</span>
-                        )}
                       </td>
                       <td className="border border-border px-2 py-1 whitespace-nowrap">
                         {a.status === "approved" ? (

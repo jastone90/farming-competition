@@ -35,6 +35,17 @@ export default function SettingsPage() {
   const [newPin, setNewPin] = useState("");
   const [pinMsg, setPinMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserInfo[]>([]);
+  const [newName, setNewName] = useState("");
+  const [newUserPin, setNewUserPin] = useState("");
+  const [newColor, setNewColor] = useState("");
+  const [addMsg, setAddMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [addLoading, setAddLoading] = useState(false);
+  const [showColorModal, setShowColorModal] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("");
+  const [colorMsg, setColorMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [colorLoading, setColorLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -42,6 +53,11 @@ export default function SettingsPage() {
       .then((d) => {
         if (d.user) setUser(d.user);
       })
+      .catch(() => {});
+
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then(setAllUsers)
       .catch(() => {});
 
     fetch("/api/scoring/rules")
@@ -97,6 +113,66 @@ export default function SettingsPage() {
       }, 1000);
     } else {
       setPinMsg({ text: data.error || "Failed to change PIN", ok: false });
+    }
+  }
+
+  const colorPresets = [
+    // Row 1: iOS system colors
+    "#007AFF", "#34C759", "#FF9500", "#FF3B30",
+    "#AF52DE", "#5856D6", "#FF2D55", "#00C7BE",
+    // Row 2: extended palette
+    "#30B0C7", "#A2845E", "#64D2FF", "#FFD60A",
+    "#BF5AF2", "#FF6482", "#32D74B", "#0A84FF",
+  ];
+  const takenColors = new Set(allUsers.map((u) => u.color.toUpperCase()));
+
+  async function handleAddCompetitor(e: React.FormEvent) {
+    e.preventDefault();
+    setAddMsg(null);
+    setAddLoading(true);
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName, pin: newUserPin, color: newColor }),
+    });
+    const data = await res.json();
+    setAddLoading(false);
+    if (res.ok) {
+      setAddMsg({ text: `${data.name} added!`, ok: true });
+      setAllUsers((prev) => [...prev, { ...data, stravaAthleteId: null }]);
+      setNewName("");
+      setNewUserPin("");
+      setNewColor("");
+      setTimeout(() => {
+        setShowAddModal(false);
+        setAddMsg(null);
+      }, 1000);
+    } else {
+      setAddMsg({ text: data.error || "Failed to add competitor", ok: false });
+    }
+  }
+
+  async function handleChangeColor(e: React.FormEvent) {
+    e.preventDefault();
+    setColorMsg(null);
+    setColorLoading(true);
+    const res = await fetch("/api/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ color: selectedColor }),
+    });
+    const data = await res.json();
+    setColorLoading(false);
+    if (res.ok) {
+      setColorMsg({ text: "Color updated!", ok: true });
+      setUser((prev) => prev ? { ...prev, color: selectedColor } : prev);
+      setAllUsers((prev) => prev.map((u) => u.id === user?.id ? { ...u, color: selectedColor } : u));
+      setTimeout(() => {
+        setShowColorModal(false);
+        setColorMsg(null);
+      }, 1000);
+    } else {
+      setColorMsg({ text: data.error || "Failed to change color", ok: false });
     }
   }
 
@@ -212,6 +288,24 @@ export default function SettingsPage() {
                   <td className="border border-border px-2 py-1.5 font-semibold">Actions</td>
                   <td className="border border-border px-2 py-1.5">
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setShowPinModal(true); setPinMsg(null); setCurrentPin(""); setNewPin(""); }}
+                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
+                      >
+                        Change PIN
+                      </button>
+                      <button
+                        onClick={() => { setShowColorModal(true); setColorMsg(null); setSelectedColor(user.color); }}
+                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
+                      >
+                        Change Color
+                      </button>
+                      <button
+                        onClick={() => { setShowAddModal(true); setAddMsg(null); setNewName(""); setNewUserPin(""); setNewColor(""); }}
+                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
+                      >
+                        Add Competitor
+                      </button>
                       {user.stravaAthleteId ? (
                         <button
                           onClick={handleSync}
@@ -228,12 +322,6 @@ export default function SettingsPage() {
                           Connect Strava
                         </a>
                       )}
-                      <button
-                        onClick={() => { setShowPinModal(true); setPinMsg(null); setCurrentPin(""); setNewPin(""); }}
-                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
-                      >
-                        Change PIN
-                      </button>
                       {syncResult && (
                         <span className="text-muted-foreground">{syncResult}</span>
                       )}
@@ -393,6 +481,146 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setShowPinModal(false)}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium border border-input hover:bg-muted"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Competitor Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
+          <div className="bg-card border border-border shadow-lg w-72 p-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-bold mb-3">Add Competitor</h2>
+            <form onSubmit={handleAddCompetitor} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold block mb-1">Name</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Name"
+                  className="w-full border border-input bg-background px-2 py-1.5 text-sm"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold block mb-1">PIN</label>
+                <input
+                  type="password"
+                  maxLength={4}
+                  value={newUserPin}
+                  onChange={(e) => setNewUserPin(e.target.value)}
+                  placeholder="4-digit PIN"
+                  className="w-full border border-input bg-background px-2 py-1.5 text-sm text-center tracking-widest"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold block mb-1">Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {colorPresets.map((c) => {
+                    const taken = takenColors.has(c.toUpperCase());
+                    const selected = newColor === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        disabled={taken}
+                        onClick={() => setNewColor(c)}
+                        className={`h-7 w-7 rounded-full border-2 transition-all ${
+                          selected
+                            ? "border-foreground scale-110"
+                            : taken
+                            ? "border-transparent opacity-25 cursor-not-allowed"
+                            : "border-transparent hover:border-muted-foreground"
+                        }`}
+                        style={{ backgroundColor: c }}
+                        title={taken ? "Already taken" : c}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+              {addMsg && (
+                <p className={`text-xs font-medium ${addMsg.ok ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                  {addMsg.text}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={!newName.trim() || newUserPin.length < 4 || !newColor || addLoading}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 border border-primary disabled:opacity-50"
+                >
+                  {addLoading ? "Adding..." : "Add"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium border border-input hover:bg-muted"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Color Modal */}
+      {showColorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowColorModal(false)}>
+          <div className="bg-card border border-border shadow-lg w-72 p-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-bold mb-3">Change Color</h2>
+            <form onSubmit={handleChangeColor} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold block mb-1">Pick a new color</label>
+                <div className="flex flex-wrap gap-2">
+                  {colorPresets.map((c) => {
+                    const takenByOther = allUsers.some(
+                      (u) => u.id !== user?.id && u.color.toUpperCase() === c.toUpperCase()
+                    );
+                    const selected = selectedColor === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        disabled={takenByOther}
+                        onClick={() => setSelectedColor(c)}
+                        className={`h-7 w-7 rounded-full border-2 transition-all ${
+                          selected
+                            ? "border-foreground scale-110"
+                            : takenByOther
+                            ? "border-transparent opacity-25 cursor-not-allowed"
+                            : "border-transparent hover:border-muted-foreground"
+                        }`}
+                        style={{ backgroundColor: c }}
+                        title={takenByOther ? "Taken by another competitor" : c}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+              {colorMsg && (
+                <p className={`text-xs font-medium ${colorMsg.ok ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                  {colorMsg.text}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={!selectedColor || selectedColor === user?.color || colorLoading}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 border border-primary disabled:opacity-50"
+                >
+                  {colorLoading ? "Saving..." : "Update"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowColorModal(false)}
                   className="flex-1 px-3 py-1.5 text-xs font-medium border border-input hover:bg-muted"
                 >
                   Cancel

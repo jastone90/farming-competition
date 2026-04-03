@@ -129,6 +129,8 @@ export const auditLog = sqliteTable("audit_log", {
       "amendment_withdraw",
       "vote_cast",
       "pin_change",
+      "user_create",
+      "color_change",
     ],
   }).notNull(),
   entityType: text("entity_type", {

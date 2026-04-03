@@ -31,6 +31,7 @@ export function AmendmentCard({
 }: AmendmentCardProps) {
   const yeeCount = votes.filter((v) => v.vote === "yee").length;
   const nahCount = votes.filter((v) => v.vote === "nah").length;
+  const supermajority = Math.ceil(users.length * 3 / 4);
   const hasVoted =
     currentUserId && votes.some((v) => v.userId === currentUserId);
   const isVoting = status === "voting";
@@ -102,10 +103,10 @@ export function AmendmentCard({
                 <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full bg-amber-500"
-                    style={{ width: `${(yeeCount / 3) * 100}%` }}
+                    style={{ width: `${(yeeCount / supermajority) * 100}%` }}
                   />
                 </div>
-                <span>{yeeCount}/3 needed</span>
+                <span>{yeeCount}/{supermajority} needed</span>
               </div>
               {currentUserId && !hasVoted && onVote && (
                 <div className="flex gap-2">

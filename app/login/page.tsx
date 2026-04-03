@@ -1,14 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const userOptions = ["Alan", "Brian", "Martin", "Will"];
+interface UserOption {
+  id: number;
+  name: string;
+  color: string;
+}
 
 export default function LoginPage() {
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/users")
+      .then((r) => r.json())
+      .then((data) => {
+        setUsers(data);
+        setLoadingUsers(false);
+      })
+      .catch(() => setLoadingUsers(false));
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -43,22 +59,30 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="text-sm font-medium mb-1 block">Who are you?</label>
-            <div className="grid grid-cols-2 gap-2">
-              {userOptions.map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => setName(u)}
-                  className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                    name === u
-                      ? "border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-500"
-                      : "border-border hover:bg-accent"
-                  }`}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
+            {loadingUsers ? (
+              <div className="text-sm text-muted-foreground text-center py-4">Loading...</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {users.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => setName(u.name)}
+                    className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                      name === u.name
+                        ? "border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-500"
+                        : "border-border hover:bg-accent"
+                    }`}
+                  >
+                    <span
+                      className="inline-block h-3 w-3 rounded-full shrink-0"
+                      style={{ backgroundColor: u.color }}
+                    />
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

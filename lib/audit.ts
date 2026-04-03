@@ -7,7 +7,9 @@ type AuditAction =
   | "amendment_propose"
   | "amendment_withdraw"
   | "vote_cast"
-  | "pin_change";
+  | "pin_change"
+  | "user_create"
+  | "color_change";
 
 type AuditEntityType = "activity" | "amendment" | "vote" | "user";
 

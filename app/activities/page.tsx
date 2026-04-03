@@ -16,6 +16,7 @@ interface ActivityData {
   durationMinutes: number | null;
   elevationGainFeet: number | null;
   caloriesBurned: number | null;
+  poundsLifted: number | null;
   rawPoints: number;
   modifiedPoints: number;
   pointBreakdown: Record<string, { label: string; points: number }>;
@@ -41,6 +42,7 @@ type SortField =
   | "durationMinutes"
   | "elevationGainFeet"
   | "caloriesBurned"
+  | "poundsLifted"
   | "modifiedPoints"
   | "source";
 type SortDir = "asc" | "desc";
@@ -291,14 +293,7 @@ export default function ActivitiesPage() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [activities]);
 
-  // Auto-select logged-in user's tab in sheet mode (only on first load)
-  const hasAutoSelected = useRef(false);
-  useEffect(() => {
-    if (!hasAutoSelected.current && currentUserId && activeTab === "all" && users.some((u) => u.id === currentUserId)) {
-      hasAutoSelected.current = true;
-      setActiveTab(currentUserId);
-    }
-  }, [currentUserId, users, activeTab]);
+  // activeTab defaults to "all" — no auto-select
 
   // Group activities by user for grid view
   const activitiesByUser = useMemo(() => {
@@ -387,7 +382,7 @@ export default function ActivitiesPage() {
     { field: "distanceMiles", label: "Miles", align: "right" },
     { field: "durationMinutes", label: "Min", align: "right" },
     { field: "elevationGainFeet", label: "Elev (ft)", align: "right" },
-    { field: "caloriesBurned", label: "Cal", align: "right" },
+    { field: "poundsLifted", label: "Lbs", align: "right" },
     { field: "modifiedPoints", label: "Points", align: "right" },
   ];
 
@@ -618,7 +613,7 @@ export default function ActivitiesPage() {
                       {numCell(a.elevationGainFeet, 0)}
                     </td>
                     <td className="border border-border px-2 py-1 text-right tabular-nums">
-                      {numCell(a.caloriesBurned, 0)}
+                      {numCell(a.poundsLifted, 0)}
                     </td>
                     <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} className="px-2 py-1" />
                     <td className="border border-border px-2 py-1 text-center">

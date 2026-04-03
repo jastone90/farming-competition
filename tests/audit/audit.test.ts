@@ -198,6 +198,44 @@ describe("audit log - all action types", () => {
     expect(entry.action).toBe("pin_change");
     expect(entry.metadata).toBe("{}");
   });
+
+  it("stores user_create action with new user details", async () => {
+    await createUser(testDb, { name: "Alan" });
+
+    const entry = await createAuditEntry(testDb, {
+      userId: 1,
+      action: "user_create",
+      entityType: "user",
+      entityId: 5,
+      metadata: JSON.stringify({ name: "Charlie", color: "#AF52DE" }),
+    });
+
+    expect(entry.action).toBe("user_create");
+    expect(entry.entityType).toBe("user");
+    expect(entry.entityId).toBe(5);
+    const meta = JSON.parse(entry.metadata);
+    expect(meta.name).toBe("Charlie");
+    expect(meta.color).toBe("#AF52DE");
+  });
+
+  it("stores color_change action with old and new colors", async () => {
+    await createUser(testDb, { name: "Alan" });
+
+    const entry = await createAuditEntry(testDb, {
+      userId: 1,
+      action: "color_change",
+      entityType: "user",
+      entityId: 1,
+      metadata: JSON.stringify({ oldColor: "#007AFF", newColor: "#AF52DE" }),
+    });
+
+    expect(entry.action).toBe("color_change");
+    expect(entry.entityType).toBe("user");
+    expect(entry.entityId).toBe(1);
+    const meta = JSON.parse(entry.metadata);
+    expect(meta.oldColor).toBe("#007AFF");
+    expect(meta.newColor).toBe("#AF52DE");
+  });
 });
 
 describe("audit log - sketch detection", () => {
@@ -443,6 +481,85 @@ describe("audit log - cross-user scenarios", () => {
     const user4 = all.filter((e) => e.userId === 4);
     expect(user4).toHaveLength(1);
     expect(user4[0].action).toBe("pin_change");
+  });
+
+  it("user_create audit links creator to new user", async () => {
+    await createUser(testDb, { name: "Alan", color: "#007AFF" });
+    const newUser = await createUser(testDb, { name: "Charlie", color: "#AF52DE" });
+
+    // Alan (id=1) created Charlie (id=2)
+    await createAuditEntry(testDb, {
+      userId: 1,
+      action: "user_create",
+      entityType: "user",
+      entityId: newUser.id,
+      metadata: JSON.stringify({ name: "Charlie", color: "#AF52DE" }),
+    });
+
+    const entries = await testDb.db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.action, "user_create"));
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].userId).toBe(1); // creator
+    expect(entries[0].entityId).toBe(2); // created user
+    const meta = JSON.parse(entries[0].metadata);
+    expect(meta.name).toBe("Charlie");
+  });
+
+  it("color_change audit tracks before and after", async () => {
+    await createUser(testDb, { name: "Alan", color: "#007AFF" });
+
+    await createAuditEntry(testDb, {
+      userId: 1,
+      action: "color_change",
+      entityType: "user",
+      entityId: 1,
+      metadata: JSON.stringify({ oldColor: "#007AFF", newColor: "#BF5AF2" }),
+      createdAt: "2026-03-10T10:00:00Z",
+    });
+
+    await createAuditEntry(testDb, {
+      userId: 1,
+      action: "color_change",
+      entityType: "user",
+      entityId: 1,
+      metadata: JSON.stringify({ oldColor: "#BF5AF2", newColor: "#FFD60A" }),
+      createdAt: "2026-03-15T10:00:00Z",
+    });
+
+    const entries = await testDb.db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.action, "color_change"))
+      .orderBy(desc(auditLog.createdAt));
+
+    expect(entries).toHaveLength(2);
+    // Most recent change
+    const latest = JSON.parse(entries[0].metadata);
+    expect(latest.oldColor).toBe("#BF5AF2");
+    expect(latest.newColor).toBe("#FFD60A");
+    // First change
+    const first = JSON.parse(entries[1].metadata);
+    expect(first.oldColor).toBe("#007AFF");
+    expect(first.newColor).toBe("#BF5AF2");
+  });
+
+  it("filters audit log by new action types", async () => {
+    await createUser(testDb, { name: "Alan" });
+    await createUser(testDb, { name: "Brian" });
+
+    await createAuditEntry(testDb, { userId: 1, action: "user_create", entityType: "user", entityId: 2 });
+    await createAuditEntry(testDb, { userId: 1, action: "color_change", entityType: "user", entityId: 1 });
+    await createAuditEntry(testDb, { userId: 1, action: "activity_create", entityType: "activity" });
+    await createAuditEntry(testDb, { userId: 2, action: "color_change", entityType: "user", entityId: 2 });
+
+    const userCreates = await testDb.db.select().from(auditLog).where(eq(auditLog.action, "user_create"));
+    expect(userCreates).toHaveLength(1);
+
+    const colorChanges = await testDb.db.select().from(auditLog).where(eq(auditLog.action, "color_change"));
+    expect(colorChanges).toHaveLength(2);
   });
 
   it("sketch entries are isolated per user", async () => {

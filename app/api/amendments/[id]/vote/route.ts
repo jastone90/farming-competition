@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { amendments, votes, users } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lte } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 
@@ -67,8 +67,12 @@ export async function POST(
   const yeeCount = allVotes.filter((v) => v.vote === "yee").length;
   const nahCount = allVotes.filter((v) => v.vote === "nah").length;
 
-  const totalUsers = await db.select({ id: users.id }).from(users);
-  const voterCount = totalUsers.length;
+  // Only count users who existed when voting opened (new users shouldn't block resolution)
+  const eligibleVoters = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(lte(users.createdAt, amendment.votingOpensAt));
+  const voterCount = eligibleVoters.length;
 
   // Only resolve once everyone has voted
   if (allVotes.length === voterCount) {
