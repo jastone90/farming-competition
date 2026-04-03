@@ -9,7 +9,8 @@ type AuditAction =
   | "vote_cast"
   | "pin_change"
   | "user_create"
-  | "color_change";
+  | "color_change"
+  | "strava_sync";
 
 type AuditEntityType = "activity" | "amendment" | "vote" | "user";
 

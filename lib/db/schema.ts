@@ -133,6 +133,7 @@ export const auditLog = sqliteTable("audit_log", {
       "pin_change",
       "user_create",
       "color_change",
+      "strava_sync",
     ],
   }).notNull(),
   entityType: text("entity_type", {

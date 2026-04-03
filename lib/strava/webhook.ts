@@ -60,6 +60,7 @@ export async function handleStravaEvent(event: {
     {
       type: mapped.type,
       isIndoor: mapped.isIndoor,
+      activityDate: mapped.activityDate,
       distanceMiles: mapped.distanceMiles,
       durationMinutes: mapped.durationMinutes,
       elevationGainFeet: mapped.elevationGainFeet,
