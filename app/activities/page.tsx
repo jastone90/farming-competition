@@ -92,7 +92,7 @@ function PointsCell({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; flipLeft: boolean } | null>(null);
   const ref = useRef<HTMLTableCellElement>(null);
 
   const items = Object.values(breakdown);
@@ -100,7 +100,9 @@ function PointsCell({
   function handleEnter() {
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
-      setPos({ top: rect.top, left: rect.right });
+      const tooltipWidth = 220;
+      const flipLeft = rect.right + tooltipWidth + 16 > window.innerWidth;
+      setPos({ top: rect.top, left: flipLeft ? rect.left : rect.right, flipLeft });
     }
     setOpen(true);
   }
@@ -116,7 +118,12 @@ function PointsCell({
       {open && items.length > 0 && pos && createPortal(
         <div
           className="fixed z-[9999] bg-card border border-border shadow-xl rounded p-2 text-left whitespace-nowrap min-w-[200px]"
-          style={{ top: pos.top, left: pos.left + 8, transform: "translateY(-50%)" }}
+          style={{
+            top: pos.top,
+            left: pos.flipLeft ? undefined : pos.left + 8,
+            right: pos.flipLeft ? window.innerWidth - pos.left + 8 : undefined,
+            transform: "translateY(-50%)",
+          }}
         >
           <div className="text-[10px] font-semibold text-foreground mb-1">Point Breakdown</div>
           {items.map((item, i) => (
