@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 
 interface AuditEntry {
   id: number;
@@ -53,6 +54,45 @@ function formatTimestamp(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function SketchInfoTooltip() {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  function handleEnter() {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    }
+    setOpen(true);
+  }
+
+  return (
+    <span
+      ref={ref}
+      className="self-center cursor-help text-muted-foreground hover:text-foreground transition-colors"
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <svg className="h-5 w-5" viewBox="0 0 16 16" fill="currentColor">
+        <path fillRule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm.75-10.25a.75.75 0 00-1.5 0v.01a.75.75 0 001.5 0v-.01zM7.25 8a.75.75 0 011.5 0v3.25a.75.75 0 01-1.5 0V8z" />
+      </svg>
+      {open && pos && createPortal(
+        <div
+          className="fixed z-[9999] bg-card border border-border shadow-xl rounded p-2 text-left whitespace-nowrap min-w-[200px]"
+          style={{ top: pos.top, right: pos.right }}
+        >
+          <div className="text-[10px] font-semibold text-foreground mb-1">What gets flagged SKETCH?</div>
+          <div className="text-[10px] text-muted-foreground">Activity logged &gt;3 weeks after its date</div>
+          <div className="text-[10px] text-muted-foreground">PIN change (always sus)</div>
+          <div className="text-[10px] text-muted-foreground">user=brian</div>
+        </div>,
+        document.body
+      )}
+    </span>
+  );
 }
 
 export default function AuditPage() {
@@ -127,11 +167,12 @@ export default function AuditPage() {
               onChange={(e) => setSketchOnly(e.target.checked)}
               className="accent-red-600"
             />
-            SKETCHY SHIT ONLY
+            SKETCHY STUFF FILTER
           </label>
           <span className="text-xs text-muted-foreground self-center font-mono">
             {filtered.length} events
           </span>
+          <SketchInfoTooltip />
         </div>
       </div>
 

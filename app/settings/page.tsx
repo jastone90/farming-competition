@@ -216,9 +216,9 @@ export default function SettingsPage() {
                         <button
                           onClick={handleSync}
                           disabled={syncing}
-                          className="px-2 py-0.5 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 disabled:opacity-50"
+                          className="px-2 py-0.5 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 disabled:opacity-50 min-w-[180px]"
                         >
-                          {syncing ? "Syncing..." : `Strava\u2122 Sync ${new Date().getFullYear()}`}
+                          {syncing ? "Syncing..." : <>Strava&#8482; Sync <span className="text-[10px] opacity-80">({new Date().getFullYear()} activities)</span></>}
                         </button>
                       ) : (
                         <a

@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     action: "pin_change",
     entityType: "user",
     entityId: session.id,
+    isSketch: true,
   });
 
   return NextResponse.json({ success: true });
