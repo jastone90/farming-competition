@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { amendments, votes, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(
   request: Request,
@@ -47,6 +48,14 @@ export async function POST(
     amendmentId,
     userId: session.id,
     vote: vote as "yee" | "nah",
+  });
+
+  await logAudit({
+    userId: session.id,
+    action: "vote_cast",
+    entityType: "vote",
+    entityId: amendmentId,
+    metadata: { amendmentNumber: amendment.number, vote },
   });
 
   // Check if all users have voted before resolving

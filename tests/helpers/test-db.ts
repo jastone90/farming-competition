@@ -85,6 +85,17 @@ const DDL = `
     effective_date TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER,
+    metadata TEXT NOT NULL DEFAULT '{}',
+    is_sketch INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
 `;
 
 export function createTestDb() {

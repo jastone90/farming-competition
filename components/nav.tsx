@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/", label: "Dashboard" },
   { href: "/activities", label: "Activities" },
   { href: "/amendments", label: "Amendments" },
+  { href: "/audit", label: "Audit Log" },
   { href: "/settings", label: "Settings" },
 ];
 

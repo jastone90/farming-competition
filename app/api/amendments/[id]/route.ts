@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { amendments, votes, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   _request: Request,
@@ -70,6 +71,14 @@ export async function DELETE(
   // Delete votes first (foreign key), then the amendment
   await db.delete(votes).where(eq(votes.amendmentId, amendmentId));
   await db.delete(amendments).where(eq(amendments.id, amendmentId));
+
+  await logAudit({
+    userId: session.id,
+    action: "amendment_withdraw",
+    entityType: "amendment",
+    entityId: amendmentId,
+    metadata: { title: amendment.title, number: amendment.number },
+  });
 
   return NextResponse.json({ success: true });
 }

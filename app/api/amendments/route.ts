@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { amendments, votes, users } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   const allAmendments = await db
@@ -57,6 +58,14 @@ export async function POST(request: Request) {
       votingOpensAt: now,
     })
     .returning();
+
+  await logAudit({
+    userId: session.id,
+    action: "amendment_propose",
+    entityType: "amendment",
+    entityId: inserted.id,
+    metadata: { title, number: inserted.number },
+  });
 
   return NextResponse.json(inserted);
 }

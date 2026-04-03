@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function DELETE(
   _request: Request,
@@ -32,5 +33,19 @@ export async function DELETE(
   }
 
   await db.delete(activities).where(and(eq(activities.id, activityId), eq(activities.userId, session.id)));
+
+  await logAudit({
+    userId: session.id,
+    action: "activity_delete",
+    entityType: "activity",
+    entityId: activityId,
+    metadata: {
+      title: activity.title,
+      type: activity.type,
+      activityDate: activity.activityDate,
+      points: activity.modifiedPoints,
+    },
+  });
+
   return NextResponse.json({ success: true });
 }

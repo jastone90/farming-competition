@@ -116,6 +116,32 @@ export const scoringRules = sqliteTable("scoring_rules", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const auditLog = sqliteTable("audit_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  action: text("action", {
+    enum: [
+      "activity_create",
+      "activity_delete",
+      "amendment_propose",
+      "amendment_withdraw",
+      "vote_cast",
+      "pin_change",
+    ],
+  }).notNull(),
+  entityType: text("entity_type", {
+    enum: ["activity", "amendment", "vote", "user"],
+  }).notNull(),
+  entityId: integer("entity_id"),
+  metadata: text("metadata").notNull().default("{}"),
+  isSketch: integer("is_sketch", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const seasons = sqliteTable("seasons", {
   year: integer("year").primaryKey(),
   startDate: text("start_date").notNull(),
@@ -131,3 +157,4 @@ export type Vote = typeof votes.$inferSelect;
 export type ScoringRule = typeof scoringRules.$inferSelect;
 export type Season = typeof seasons.$inferSelect;
 export type ScoringEngineVersion = typeof scoringEngineVersions.$inferSelect;
+export type AuditLog = typeof auditLog.$inferSelect;

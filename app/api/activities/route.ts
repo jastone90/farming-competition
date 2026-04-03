@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import { scoreActivity, getCurrentEngineVersion } from "@/lib/scoring/engine";
 import { getActiveRulesForSeason } from "@/lib/scoring/active-rules";
 import { getSeasonForDate } from "@/lib/utils/season";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -105,6 +106,25 @@ export async function POST(request: Request) {
       engineVersion,
     })
     .returning();
+
+  const daysDiff = Math.floor(
+    (Date.now() - new Date(activityDate).getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  await logAudit({
+    userId: session.id,
+    action: "activity_create",
+    entityType: "activity",
+    entityId: inserted.id,
+    metadata: {
+      title: inserted.title,
+      type,
+      activityDate,
+      points: result.modifiedPoints,
+      isIndoor: isIndoor || false,
+    },
+    isSketch: daysDiff > 21,
+  });
 
   return NextResponse.json({ ...inserted, pointBreakdown: result.pointBreakdown });
 }

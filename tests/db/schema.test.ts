@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestDb, type TestDb } from "../helpers/test-db";
-import { users, activities, amendments, votes, scoringRules, seasons, scoringEngineVersions } from "@/lib/db/schema";
+import { users, activities, amendments, votes, scoringRules, seasons, scoringEngineVersions, auditLog } from "@/lib/db/schema";
 
 let testDb: TestDb;
 
@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 describe("database schema", () => {
-  it("creates all 7 tables", async () => {
+  it("creates all 8 tables", async () => {
     const result = await testDb.client.execute(
       "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
     );
@@ -26,6 +26,7 @@ describe("database schema", () => {
     expect(tableNames).toContain("scoring_rules");
     expect(tableNames).toContain("seasons");
     expect(tableNames).toContain("scoring_engine_versions");
+    expect(tableNames).toContain("audit_log");
   });
 
   it("users table has auto-incrementing id", async () => {

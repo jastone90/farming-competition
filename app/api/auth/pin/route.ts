@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -35,6 +36,13 @@ export async function POST(request: Request) {
     .update(users)
     .set({ pin: newPin })
     .where(eq(users.id, session.id));
+
+  await logAudit({
+    userId: session.id,
+    action: "pin_change",
+    entityType: "user",
+    entityId: session.id,
+  });
 
   return NextResponse.json({ success: true });
 }
