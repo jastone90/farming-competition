@@ -22,6 +22,7 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
   const [elevation, setElevation] = useState("");
   const [poundsLifted, setPoundsLifted] = useState("");
   const [isIndoor, setIsIndoor] = useState(false);
+  const [withChild, setWithChild] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [preview, setPreview] = useState<{
     rawPoints: number;
@@ -39,6 +40,7 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
       body: JSON.stringify({
         type,
         isIndoor,
+        withChild,
         distanceMiles: distance ? parseFloat(distance) : null,
         elevationGainFeet: elevation ? parseFloat(elevation) : null,
         poundsLifted: poundsLifted ? parseFloat(poundsLifted) : null,
@@ -59,6 +61,7 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
         type,
         title: title || activityTypes.find((t) => t.value === type)?.label.split(" ")[0] || "Activity",
         isIndoor,
+        withChild,
         distanceMiles: distance ? parseFloat(distance) : null,
         elevationGainFeet: elevation ? parseFloat(elevation) : null,
         poundsLifted: poundsLifted ? parseFloat(poundsLifted) : null,
@@ -177,6 +180,19 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
             />
             <label htmlFor="indoor" className="text-sm">
               Indoor Activity
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="withChild"
+              checked={withChild}
+              onChange={(e) => setWithChild(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor="withChild" className="text-sm">
+              With Child (2.5× points)
             </label>
           </div>
 

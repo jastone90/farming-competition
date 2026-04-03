@@ -7,7 +7,7 @@ import type { ActiveRule } from "@/lib/scoring/types";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { type, isIndoor, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted } = body;
+  const { type, isIndoor, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted, withChild } = body;
 
   const currentYear = new Date().getFullYear();
   const rules = await db
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }));
 
   const result = scoreActivity(
-    { type, isIndoor: isIndoor || false, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted },
+    { type, isIndoor: isIndoor || false, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted, withChild: withChild || false },
     activeRules
   );
 

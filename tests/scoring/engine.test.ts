@@ -138,3 +138,111 @@ describe("scoreActivity", () => {
     expect(Object.keys(result.pointBreakdown)).toContain("elevation");
   });
 });
+
+describe("scoreActivity — kidz integration (ALL_RULES)", () => {
+  it("2.5× outdoor run with full ruleset", () => {
+    const input: ScoringInput = {
+      type: "run",
+      isIndoor: false,
+      distanceMiles: 5,
+      activityDate: "2026-03-15",
+      withChild: true,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // Base: 5 × 4 = 20, × 2.5 = 50
+    expect(result.rawPoints).toBe(50);
+    expect(result.pointBreakdown.kidz).toBeDefined();
+    expect(result.pointBreakdown.kidz.points).toBe(30);
+  });
+
+  it("2.5× outdoor ride with full ruleset", () => {
+    const input: ScoringInput = {
+      type: "ride",
+      isIndoor: false,
+      distanceMiles: 20,
+      activityDate: "2026-06-01",
+      withChild: true,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // Base: 20 × 1 = 20, × 2.5 = 50
+    expect(result.rawPoints).toBe(50);
+  });
+
+  it("2.5× weight training with full ruleset", () => {
+    const input: ScoringInput = {
+      type: "weight_training",
+      isIndoor: true,
+      poundsLifted: 10000,
+      activityDate: "2026-06-01",
+      withChild: true,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // Base: 10000/1000 × 0.5 = 5, × 2.5 = 12.5
+    expect(result.rawPoints).toBe(12.5);
+  });
+
+  it("2.5× stacks with outdoor elevation bonus (run)", () => {
+    const input: ScoringInput = {
+      type: "run",
+      isIndoor: false,
+      distanceMiles: 5.2,
+      elevationGainFeet: 320,
+      activityDate: "2026-03-15",
+      withChild: true,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // Base: 5.2 × 4 = 20.8, Elev: 320 × 0.013 = 4.16
+    // Pre-kidz: 24.96, × 2.5 = 62.4
+    expect(result.rawPoints).toBe(62.4);
+    expect(result.pointBreakdown.base).toBeDefined();
+    expect(result.pointBreakdown.elevation).toBeDefined();
+    expect(result.pointBreakdown.kidz).toBeDefined();
+  });
+
+  it("indoor run with kidz skips elevation (outdoorOnly) but still applies 2.5×", () => {
+    const input: ScoringInput = {
+      type: "run",
+      isIndoor: true,
+      distanceMiles: 5,
+      elevationGainFeet: 200,
+      activityDate: "2026-03-15",
+      withChild: true,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // Base: 5 × 4 = 20 (no elev for indoor), × 2.5 = 50
+    expect(result.rawPoints).toBe(50);
+    expect(result.pointBreakdown.elevation).toBeUndefined();
+    expect(result.pointBreakdown.kidz).toBeDefined();
+  });
+
+  it("withChild: false with full ruleset matches no-kidz score", () => {
+    const input: ScoringInput = {
+      type: "run",
+      isIndoor: false,
+      distanceMiles: 5,
+      activityDate: "2026-03-15",
+    };
+    const withFalse: ScoringInput = { ...input, withChild: false };
+    const r1 = scoreActivity(input, ALL_RULES);
+    const r2 = scoreActivity(withFalse, ALL_RULES);
+    expect(r1.rawPoints).toBe(r2.rawPoints);
+    expect(r1.rawPoints).toBe(20);
+    expect(r2.pointBreakdown.kidz).toBeUndefined();
+  });
+
+  // Spot-check from 2026 CSV: WHB 2/18/2026 — 4mi run, 210ft elev, with kidz
+  it("matches 2026 CSV spot-check: WHB 4mi run + 210ft + kidz", () => {
+    const input: ScoringInput = {
+      type: "run",
+      isIndoor: false,
+      distanceMiles: 4,
+      elevationGainFeet: 210,
+      activityDate: "2026-02-18",
+      withChild: true,
+    };
+    const result = scoreActivity(input, ALL_RULES);
+    // Base: 4 × 4 = 16, Elev: 210 × 0.013 = 2.73
+    // Pre-kidz: 18.73, × 2.5 = 46.825 → rounded = 46.83
+    expect(result.rawPoints).toBe(46.83);
+  });
+});

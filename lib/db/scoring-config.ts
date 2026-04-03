@@ -67,6 +67,12 @@ export const scoringRules = [
     isActive: true,
     effectiveSeason: 2026,
   },
+  {
+    ruleType: "kidz_multiplier",
+    config: { multiplier: 2.5 },
+    isActive: true,
+    effectiveSeason: 2026,
+  },
 ] as const;
 
 export const engineVersions = [
@@ -92,5 +98,11 @@ export const engineVersions = [
     summary:
       "Elevation bonuses apply to all activities (indoor and outdoor)",
     effectiveDate: "2026-04-02",
+  },
+  {
+    version: "1.4",
+    summary:
+      "Kidz multiplier: 2.5\u00d7 points when exercising with a child",
+    effectiveDate: "2026-04-03",
   },
 ] as const;

@@ -32,6 +32,7 @@ export async function GET(request: Request) {
       title: activities.title,
       type: activities.type,
       isIndoor: activities.isIndoor,
+      withChild: activities.withChild,
       distanceMiles: activities.distanceMiles,
       durationMinutes: activities.durationMinutes,
       elevationGainFeet: activities.elevationGainFeet,
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
       modifiedPoints: activities.modifiedPoints,
       pointBreakdown: activities.pointBreakdown,
       activityDate: activities.activityDate,
+      engineVersion: activities.engineVersion,
       season: activities.season,
       createdAt: activities.createdAt,
       userName: users.name,
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { type, title, isIndoor, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted, activityDate } = body;
+  const { type, title, isIndoor, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted, activityDate, withChild } = body;
 
   if (!type || !activityDate) {
     return NextResponse.json({ error: "Type and date are required" }, { status: 400 });
@@ -79,7 +81,7 @@ export async function POST(request: Request) {
   const activeRules = await getActiveRulesForSeason(season);
 
   const result = scoreActivity(
-    { type, isIndoor: isIndoor || false, activityDate, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted },
+    { type, isIndoor: isIndoor || false, activityDate, distanceMiles, durationMinutes, elevationGainFeet, caloriesBurned, poundsLifted, withChild: withChild || false },
     activeRules
   );
 
@@ -93,6 +95,7 @@ export async function POST(request: Request) {
       title: title || type,
       type,
       isIndoor: isIndoor || false,
+      withChild: withChild || false,
       distanceMiles,
       durationMinutes,
       elevationGainFeet,
@@ -122,6 +125,7 @@ export async function POST(request: Request) {
       activityDate,
       points: result.modifiedPoints,
       isIndoor: isIndoor || false,
+      withChild: withChild || false,
     },
     isSketch: daysDiff > 21,
   });

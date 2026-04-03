@@ -401,6 +401,20 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </ScoringCard>
+
+                {/* Kidz Multiplier */}
+                <ScoringCard title="Kidz Multiplier">
+                  <FormulaLine label="With Child">× <Val>2.5</Val> points</FormulaLine>
+                  <div className="border-t border-border pt-2 mt-1">
+                    <div className="text-muted-foreground mb-0.5">Example: 5 mi run (20 SFUs base)</div>
+                    <div className="font-mono">
+                      = 20.0 × 2.5 ={" "}
+                      <span className="font-semibold">
+                        50.0 SFUs
+                      </span>
+                    </div>
+                  </div>
+                </ScoringCard>
               </div>
             )}
 

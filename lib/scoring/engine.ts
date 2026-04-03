@@ -100,6 +100,16 @@ export function scoreActivity(
     }
   }
 
+  // Apply kidz multiplier (2.5× when exercising with a child)
+  if (input.withChild) {
+    const kidzBonus = basePoints * 1.5;
+    breakdown.kidz = {
+      label: "Kidz multiplier (2.5\u00d7)",
+      points: Math.round(kidzBonus * 100) / 100,
+    };
+    basePoints *= 2.5;
+  }
+
   const rawPoints = Math.round(basePoints * 100) / 100;
 
   return {

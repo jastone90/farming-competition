@@ -12,6 +12,7 @@ interface ActivityData {
   title: string;
   type: string;
   isIndoor: boolean;
+  withChild: boolean;
   distanceMiles: number | null;
   durationMinutes: number | null;
   elevationGainFeet: number | null;
@@ -20,6 +21,7 @@ interface ActivityData {
   rawPoints: number;
   modifiedPoints: number;
   pointBreakdown: Record<string, { label: string; points: number }>;
+  engineVersion: string | null;
   activityDate: string;
   userName: string;
   userColor: string;
@@ -87,10 +89,12 @@ function numCell(v: number | null, decimals = 1) {
 function PointsCell({
   points,
   breakdown,
+  engineVersion,
   className,
 }: {
   points: number;
   breakdown: Record<string, { label: string; points: number }>;
+  engineVersion: string | null;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -139,6 +143,9 @@ function PointsCell({
           <div className="flex justify-between gap-4 text-[10px] border-t border-border mt-1 pt-1">
             <span className="font-semibold text-foreground">Total</span>
             <span className="font-bold text-amber-700 dark:text-amber-400">{points.toFixed(2)}</span>
+          </div>
+          <div className="text-[9px] text-muted-foreground mt-1">
+            {engineVersion ? <>ScoringEngine <span className="font-bold text-foreground">v{engineVersion}</span></> : "Historical import"}
           </div>
         </div>,
         document.body
@@ -211,7 +218,6 @@ function UserMiniTable({
                 key={a.id}
                 className="hover:bg-amber-50 dark:hover:bg-amber-950/20"
                 style={{ backgroundColor: pointsIntensity(a.modifiedPoints, maxPoints) }}
-                title={`${a.title}${a.isIndoor ? " (Indoor)" : ""}${a.elevationGainFeet ? ` · ${Math.round(a.elevationGainFeet)}ft` : ""}${a.caloriesBurned ? ` · ${Math.round(a.caloriesBurned)}cal` : ""}`}
               >
                 <td className="border border-border px-1 py-0.5 whitespace-nowrap tabular-nums">
                   {formatDate(a.activityDate)}
@@ -226,7 +232,7 @@ function UserMiniTable({
                 <td className="border border-border px-1 py-0.5 text-right tabular-nums">
                   {numCell(a.elevationGainFeet, 0)}
                 </td>
-                <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} />
+                <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} engineVersion={a.engineVersion} />
                 {canDelete && (
                   <td className="border border-border px-1 py-0.5 text-center">
                       <button
@@ -385,6 +391,8 @@ export default function ActivitiesPage() {
     { field: "poundsLifted", label: "Lbs", align: "right" },
     { field: "modifiedPoints", label: "Points", align: "right" },
   ];
+
+  // Kidz column is non-sortable, rendered separately
 
   const visibleColumns = sheetColumns.filter((c) => !c.hideOnUser || showUserCol);
 
@@ -545,13 +553,26 @@ export default function ActivitiesPage() {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-muted/70">
-                  {visibleColumns.map((col) => (
+                  {visibleColumns.filter((c) => c.field !== "modifiedPoints").map((col) => (
                     <th
                       key={col.field}
                       onClick={() => handleSort(col.field)}
                       className={`border border-border px-2 py-1.5 font-semibold cursor-pointer select-none whitespace-nowrap hover:bg-muted ${
                         col.align === "right" ? "text-right" : "text-left"
                       }`}
+                    >
+                      {col.label}
+                      <span className="text-muted-foreground">{sortArrow(col.field)}</span>
+                    </th>
+                  ))}
+                  <th className="border border-border px-2 py-1.5 font-semibold text-center whitespace-nowrap">
+                    Kidz
+                  </th>
+                  {visibleColumns.filter((c) => c.field === "modifiedPoints").map((col) => (
+                    <th
+                      key={col.field}
+                      onClick={() => handleSort(col.field)}
+                      className="border border-border px-2 py-1.5 font-semibold cursor-pointer select-none whitespace-nowrap hover:bg-muted text-right"
                     >
                       {col.label}
                       <span className="text-muted-foreground">{sortArrow(col.field)}</span>
@@ -615,7 +636,10 @@ export default function ActivitiesPage() {
                     <td className="border border-border px-2 py-1 text-right tabular-nums">
                       {numCell(a.poundsLifted, 0)}
                     </td>
-                    <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} className="px-2 py-1" />
+                    <td className="border border-border px-2 py-1 text-center">
+                      {a.withChild ? "\u2713" : "\u2013"}
+                    </td>
+                    <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} engineVersion={a.engineVersion} className="px-2 py-1" />
                     <td className="border border-border px-2 py-1 text-center">
                       {a.userId === currentUserId && season === currentYear && (
                         <button
@@ -648,6 +672,7 @@ export default function ActivitiesPage() {
                     <td className="border border-border px-2 py-1.5 text-right tabular-nums">
                       {Math.round(totals.cal)}
                     </td>
+                    <td className="border border-border px-2 py-1.5"></td>
                     <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
                       {totals.pts.toFixed(1)}
                     </td>

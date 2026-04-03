@@ -18,7 +18,8 @@ export type RuleType =
   | "weight_training"
   | "indoor_modifier"
   | "general_physical"
-  | "calorie_scoring";
+  | "calorie_scoring"
+  | "kidz_multiplier";
 
 export interface ScoringInput {
   type: ActivityType;
@@ -29,6 +30,7 @@ export interface ScoringInput {
   elevationGainFeet?: number | null;
   caloriesBurned?: number | null;
   poundsLifted?: number | null;
+  withChild?: boolean;
 }
 
 export interface BreakdownItem {
@@ -52,6 +54,7 @@ export interface RuleConfig {
   activityType?: string;
   outdoorOnly?: boolean;
   pointsPer1000Lbs?: number;
+  multiplier?: number;
   name?: string;
   description?: string;
 }

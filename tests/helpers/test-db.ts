@@ -31,6 +31,7 @@ const DDL = `
     title TEXT NOT NULL,
     type TEXT NOT NULL,
     is_indoor INTEGER NOT NULL DEFAULT 0,
+    with_child INTEGER NOT NULL DEFAULT 0,
     distance_miles REAL,
     duration_minutes REAL,
     elevation_gain_feet REAL,
