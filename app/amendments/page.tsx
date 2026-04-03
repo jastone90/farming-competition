@@ -33,6 +33,7 @@ export default function AmendmentsPage() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "approved" | "rejected" } | null>(null);
+  const [authed, setAuthed] = useState(false);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -51,7 +52,10 @@ export default function AmendmentsPage() {
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((d) => {
-        if (d.user) setCurrentUserId(d.user.id);
+        if (d.user) {
+          setCurrentUserId(d.user.id);
+          setAuthed(true);
+        }
       })
       .catch(() => {});
   }, [loadData]);
@@ -117,6 +121,17 @@ export default function AmendmentsPage() {
   if (loading) {
     return (
       <div className="text-center text-muted-foreground py-8 text-sm">Loading...</div>
+    );
+  }
+
+  if (!authed) {
+    return (
+      <div className="px-4 py-4 max-w-full">
+        <h1 className="text-lg font-bold mb-3">Amendments</h1>
+        <div className="border border-border p-3 text-xs text-muted-foreground">
+          Please <a href="/login" className="text-primary hover:underline">log in</a> to view amendments.
+        </div>
+      </div>
     );
   }
 
