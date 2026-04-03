@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -15,6 +15,7 @@ const navLinks = [
 
 export function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<{
     id: number;
     name: string;
@@ -86,6 +87,14 @@ export function Nav() {
             title="Toggle dark mode"
           >
             {dark ? "☀️" : "🌙"}
+          </button>
+
+          <button
+            onClick={() => router.push("/music")}
+            className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            title="Music"
+          >
+            🎵
           </button>
 
           {user ? (
