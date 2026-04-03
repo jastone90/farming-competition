@@ -7,12 +7,12 @@
  * @see lib/db/scoring-config.ts — source of truth for rule definitions (tracked in git)
  * @see lib/db/seed.ts — seeds rules into the database (gitignored, contains personal data)
  */
-import { db } from "@/lib/db";
+import { db as defaultDb } from "@/lib/db";
 import { scoringRules } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
 import type { ActiveRule } from "@/lib/scoring/types";
 
-export async function getActiveRulesForSeason(season: number): Promise<ActiveRule[]> {
+export async function getActiveRulesForSeason(season: number, db = defaultDb): Promise<ActiveRule[]> {
   const rules = await db
     .select()
     .from(scoringRules)
