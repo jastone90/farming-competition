@@ -49,7 +49,7 @@ export async function POST(
     vote: vote as "yee" | "nah",
   });
 
-  // Check if we have enough votes to resolve
+  // Check if all users have voted before resolving
   const allVotes = await db
     .select()
     .from(votes)
@@ -58,29 +58,31 @@ export async function POST(
   const yeeCount = allVotes.filter((v) => v.vote === "yee").length;
   const nahCount = allVotes.filter((v) => v.vote === "nah").length;
 
-  // Dynamic 3/4 supermajority based on total voter count
   const totalUsers = await db.select({ id: users.id }).from(users);
   const voterCount = totalUsers.length;
-  const supermajority = Math.ceil(voterCount * 3 / 4);
-  const rejectThreshold = voterCount - supermajority + 1; // enough nahs to make supermajority impossible
 
-  if (yeeCount >= supermajority) {
-    await db
-      .update(amendments)
-      .set({
-        status: "approved",
-        effectiveDate: `${amendment.season}-02-01`,
-        votingClosesAt: new Date().toISOString(),
-      })
-      .where(and(eq(amendments.id, amendmentId), eq(amendments.status, "voting")));
-  } else if (nahCount >= rejectThreshold) {
-    await db
-      .update(amendments)
-      .set({
-        status: "rejected",
-        votingClosesAt: new Date().toISOString(),
-      })
-      .where(and(eq(amendments.id, amendmentId), eq(amendments.status, "voting")));
+  // Only resolve once everyone has voted
+  if (allVotes.length === voterCount) {
+    const supermajority = Math.ceil(voterCount * 3 / 4);
+
+    if (yeeCount >= supermajority) {
+      await db
+        .update(amendments)
+        .set({
+          status: "approved",
+          effectiveDate: `${amendment.season}-02-01`,
+          votingClosesAt: new Date().toISOString(),
+        })
+        .where(and(eq(amendments.id, amendmentId), eq(amendments.status, "voting")));
+    } else {
+      await db
+        .update(amendments)
+        .set({
+          status: "rejected",
+          votingClosesAt: new Date().toISOString(),
+        })
+        .where(and(eq(amendments.id, amendmentId), eq(amendments.status, "voting")));
+    }
   }
 
   return NextResponse.json({ success: true, yeeCount, nahCount });

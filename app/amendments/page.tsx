@@ -32,6 +32,7 @@ export default function AmendmentsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string; type: "approved" | "rejected" } | null>(null);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -56,11 +57,30 @@ export default function AmendmentsPage() {
   }, [loadData]);
 
   async function handleVote(amendmentId: number, vote: "yee" | "nah") {
+    const amendment = amendments.find((a) => a.id === amendmentId);
     await fetch(`/api/amendments/${amendmentId}/vote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ vote }),
     });
+    // Re-fetch and check if the amendment just resolved
+    const res = await fetch("/api/amendments");
+    const d = await res.json();
+    const updated = (d.amendments || []) as AmendmentData[];
+    setAmendments(updated);
+    setAllUsers(d.users || []);
+
+    const after = updated.find((a) => a.id === amendmentId);
+    if (amendment?.status === "voting" && after && after.status !== "voting") {
+      const label = `Amendment #${after.number} ${after.status === "approved" ? "approved" : "rejected"}`;
+      setToast({ message: label, type: after.status as "approved" | "rejected" });
+      setTimeout(() => setToast(null), 3000);
+    }
+  }
+
+  async function handleDelete(amendmentId: number) {
+    if (!confirm("Withdraw this amendment? This cannot be undone.")) return;
+    await fetch(`/api/amendments/${amendmentId}`, { method: "DELETE" });
     loadData();
   }
 
@@ -232,6 +252,16 @@ export default function AmendmentsPage() {
                       </button>
                     </div>
                   )}
+                  {currentUserId && a.proposedByUserId === currentUserId && (
+                    <div className={`flex ${currentUserId && !hasVoted ? "mt-2" : ""}`}>
+                      <button
+                        onClick={() => handleDelete(a.id)}
+                        className="px-3 py-1 text-xs font-medium text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border border-border"
+                      >
+                        Withdraw
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -329,6 +359,15 @@ export default function AmendmentsPage() {
           </table>
         </div>
       </section>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-opacity ${
+          toast.type === "approved" ? "bg-green-600" : "bg-red-600"
+        }`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
