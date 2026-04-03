@@ -166,15 +166,25 @@ export default function Dashboard() {
             </button>
           </div>
           <span className="text-xs text-muted-foreground">
-            Jan 1 – Dec 25 · Week {weekNumber}/51
+            Jan 1 – Dec 25
           </span>
         </div>
       </div>
-      <div className="h-1 bg-muted mb-4 border border-border">
-        <div
-          className="h-full bg-amber-600 dark:bg-amber-500"
-          style={{ width: `${progressPct}%` }}
-        />
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+            Season Progress
+          </span>
+          <span className="text-[10px] font-bold tabular-nums text-amber-700 dark:text-amber-400">
+            Week {weekNumber} of 51 · {Math.round(progressPct)}%
+          </span>
+        </div>
+        <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-border">
+          <div
+            className="h-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-400 dark:to-amber-500 rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </div>
 
       {/* Standings Table */}
