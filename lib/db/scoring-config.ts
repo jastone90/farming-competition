@@ -45,7 +45,7 @@ export const scoringRules = [
   },
   {
     ruleType: "handicap",
-    config: { name: "Martin William Paul Ayers Memorial Handicap" },
+    config: { name: "Martin Memorial Handicap" },
     isActive: true,
     effectiveSeason: 2024,
   },

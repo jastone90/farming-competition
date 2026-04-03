@@ -15,7 +15,7 @@ export const ALL_RULES: ActiveRule[] = [
   {
     ruleType: "handicap",
     config: {
-      name: "Martin William Paul Ayers Memorial Handicap",
+      name: "Martin Memorial Handicap",
       description: "Handicap system - mechanics configurable",
     },
   },
