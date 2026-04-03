@@ -31,6 +31,11 @@ interface RecordEntry {
   date?: string;
 }
 
+interface GroupRecord {
+  season: number;
+  total: number;
+}
+
 interface Records {
   highestScoring: RecordEntry | null;
   longestRide: RecordEntry | null;
@@ -45,6 +50,14 @@ interface Records {
   leastPointsSeason: RecordEntry | null;
   highestMonth: { month: string; total: number } | null;
   highestIndividualMonth: { holder: string; color: string; value: number; season: number; month: string } | null;
+  mostCombinedPointsSeason: GroupRecord | null;
+  mostCombinedMilesSeason: GroupRecord | null;
+  mostCombinedElevationSeason: GroupRecord | null;
+  mostCombinedActivitiesSeason: GroupRecord | null;
+  highestDay: { date: string; total: number } | null;
+  lowestMonth: { month: string; total: number } | null;
+  longestDrought: { holder: string; color: string; season: number; days: number; from: string; to: string } | null;
+  activeDrought: { holder: string; color: string; days: number; since: string } | null;
 }
 
 export default function Dashboard() {
@@ -381,8 +394,14 @@ export default function Dashboard() {
           <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
             All-Time Records
           </div>
+
+          {/* Single Activity */}
+          <div className="px-2 pt-2 pb-0.5">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Single Activity
+            </span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {/* Single Activity Records */}
             <RecordCard
               icon="🏆"
               label="Highest Scoring Activity"
@@ -418,8 +437,15 @@ export default function Dashboard() {
               format={(v) => `${Number(v).toLocaleString()} lbs`}
               showTitle
             />
+          </div>
 
-            {/* Season Records */}
+          {/* Season */}
+          <div className="px-2 pt-2 pb-0.5 border-t border-border">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Season
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             <RecordCard
               icon="🥇"
               label="Most Points (Season)"
@@ -444,24 +470,16 @@ export default function Dashboard() {
               record={records.mostElevationSeason}
               format={(v) => `${Number(v).toLocaleString()} ft`}
             />
-
-            {/* Dubious Honors */}
-            <RecordCard
-              icon="😈"
-              label="December Offender"
-              record={records.biggestDecember}
-              format={(v) => `${Number(v).toFixed(1)} pts`}
-            />
-            <RecordCard
-              icon="🐌"
-              label="Least Points (Season)"
-              record={records.leastPointsSeason}
-              format={(v) => `${Number(v).toFixed(1)} pts`}
-            />
-
-            {/* Highest Output Month */}
             {records.highestIndividualMonth && (
-              <div className="border border-border p-2">
+              <div
+                className="border border-border p-2 border-l-2 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                style={{
+                  borderLeftColor: records.highestIndividualMonth.color,
+                  backgroundColor: `${records.highestIndividualMonth.color}08`,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${records.highestIndividualMonth.color}30`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div className="text-[10px] text-muted-foreground leading-tight mb-1">
                   🗓️ Best Month (Individual)
                 </div>
@@ -482,8 +500,107 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+            <RecordCard
+              icon="😈"
+              label="December Offender"
+              record={records.biggestDecember}
+              format={(v) => `${Number(v).toFixed(1)} pts`}
+            />
+            <RecordCard
+              icon="🐌"
+              label="Least Points (Season)"
+              record={records.leastPointsSeason}
+              format={(v) => `${Number(v).toFixed(1)} pts`}
+            />
+            {records.longestDrought && (
+              <div
+                className="border border-border p-2 border-l-2 flex items-start gap-3 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                style={{
+                  borderLeftColor: records.longestDrought.color,
+                  backgroundColor: `${records.longestDrought.color}08`,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${records.longestDrought.color}30`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] text-muted-foreground leading-tight mb-1">
+                    🏜️ Longest Drought
+                  </div>
+                  <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                    {records.longestDrought.days} days
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span
+                      className="inline-block h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: records.longestDrought.color }}
+                    />
+                    <span className="text-[10px] text-foreground font-medium truncate">
+                      {records.longestDrought.holder}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                    {formatDate(records.longestDrought.from)} – {formatDate(records.longestDrought.to)}
+                  </div>
+                </div>
+                {records.activeDrought && records.activeDrought.days > 0 && (
+                  <div className="border-l border-border/50 pl-3 shrink-0 text-right">
+                    <div className="text-[10px] text-muted-foreground leading-tight mb-1">Active</div>
+                    <div className="text-sm font-bold tabular-nums text-red-600 dark:text-red-400">
+                      {records.activeDrought.days}d
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5 justify-end">
+                      <span
+                        className="inline-block h-2 w-2 rounded-full shrink-0"
+                        style={{ backgroundColor: records.activeDrought.color }}
+                      />
+                      <span className="text-[10px] text-foreground font-medium">
+                        {records.activeDrought.holder}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Group */}
+          <div className="px-2 pt-2 pb-0.5 border-t border-border">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Group
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <GroupRecordCard
+              icon="🥇"
+              label="Most Combined Points (Season)"
+              record={records.mostCombinedPointsSeason}
+              format={(v) => `${Number(v).toFixed(1)} pts`}
+            />
+            <GroupRecordCard
+              icon="🛣️"
+              label="Most Combined Miles (Season)"
+              record={records.mostCombinedMilesSeason}
+              format={(v) => `${Number(v).toFixed(0)} mi`}
+            />
+            <GroupRecordCard
+              icon="🧗"
+              label="Most Combined Elevation (Season)"
+              record={records.mostCombinedElevationSeason}
+              format={(v) => `${Number(v).toLocaleString()} ft`}
+            />
+            <GroupRecordCard
+              icon="📊"
+              label="Most Combined Activities (Season)"
+              record={records.mostCombinedActivitiesSeason}
+              format={(v) => `${Number(v)} acts`}
+            />
             {records.highestMonth && (
-              <div className="border border-border p-2">
+              <div
+                className="border border-border p-2 border-l-2 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                style={{ borderLeftColor: "#D4A017", backgroundColor: "#D4A01715" }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 12px #D4A01730"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+              >
                 <div className="text-[10px] text-muted-foreground leading-tight mb-1">
                   🔥 Highest Output Month
                 </div>
@@ -492,6 +609,42 @@ export default function Dashboard() {
                 </div>
                 <div className="text-[10px] text-muted-foreground">
                   {formatMonth(records.highestMonth.month)} · All competitors
+                </div>
+              </div>
+            )}
+            {records.highestDay && (
+              <div
+                className="border border-border p-2 border-l-2 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                style={{ borderLeftColor: "#D4A017", backgroundColor: "#D4A01715" }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 12px #D4A01730"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <div className="text-[10px] text-muted-foreground leading-tight mb-1">
+                  📅 Highest Output Day
+                </div>
+                <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                  {Number(records.highestDay.total).toFixed(1)} pts
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {formatDate(records.highestDay.date)} · All competitors
+                </div>
+              </div>
+            )}
+            {records.lowestMonth && (
+              <div
+                className="border border-border p-2 border-l-2 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+                style={{ borderLeftColor: "#D4A017", backgroundColor: "#D4A01715" }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 12px #D4A01730"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <div className="text-[10px] text-muted-foreground leading-tight mb-1">
+                  😴 Lowest Output Month
+                </div>
+                <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                  {Number(records.lowestMonth.total).toFixed(1)} pts
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {formatMonth(records.lowestMonth.month)} · All competitors
                 </div>
               </div>
             )}
@@ -510,6 +663,11 @@ function formatMonth(ym: string) {
   return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`;
 }
 
+function formatDate(ymd: string) {
+  const [year, month, day] = ymd.split("-");
+  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${parseInt(day, 10)}, ${year}`;
+}
+
 function RecordCard({
   icon,
   label,
@@ -525,7 +683,15 @@ function RecordCard({
 }) {
   if (!record) return null;
   return (
-    <div className="border border-border p-2">
+    <div
+      className="border border-border p-2 border-l-2 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+      style={{
+        borderLeftColor: record.color,
+        backgroundColor: `${record.color}15`,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${record.color}30`; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+    >
       <div className="text-[10px] text-muted-foreground leading-tight mb-1">
         {icon} {label}
       </div>
@@ -549,6 +715,42 @@ function RecordCard({
           {record.title}
         </div>
       )}
+    </div>
+  );
+}
+
+function GroupRecordCard({
+  icon,
+  label,
+  record,
+  format,
+}: {
+  icon: string;
+  label: string;
+  record: GroupRecord | null;
+  format: (v: number) => string;
+}) {
+  if (!record) return null;
+  const accentColor = "#D4A017";
+  return (
+    <div
+      className="border border-border p-2 border-l-2 transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+      style={{
+        borderLeftColor: accentColor,
+        backgroundColor: `${accentColor}08`,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${accentColor}30`; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+    >
+      <div className="text-[10px] text-muted-foreground leading-tight mb-1">
+        {icon} {label}
+      </div>
+      <div className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">
+        {format(record.total)}
+      </div>
+      <div className="text-[10px] text-muted-foreground mt-0.5">
+        {record.season} · All competitors
+      </div>
     </div>
   );
 }
