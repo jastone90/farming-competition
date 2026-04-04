@@ -177,15 +177,9 @@ function sortActivities(items: ActivityData[], field: SortField, dir: SortDir) {
 function UserMiniTable({
   user,
   activities,
-  currentUserId,
-  canDelete,
-  onDelete,
 }: {
   user: UserInfo;
   activities: ActivityData[];
-  currentUserId: number | null;
-  canDelete: boolean;
-  onDelete: (id: number) => void;
 }) {
   const sorted = useMemo(
     () => sortActivities(activities, "activityDate", "desc"),
@@ -214,9 +208,6 @@ function UserMiniTable({
               <th className="border border-border px-1 py-1 text-right font-semibold">Mi</th>
               <th className="border border-border px-1 py-1 text-right font-semibold">Elev</th>
               <th className="border border-border px-1 py-1 text-right font-semibold">Pts</th>
-              {canDelete && (
-                <th className="border border-border px-1 py-1 w-4"></th>
-              )}
             </tr>
           </thead>
           <tbody>
@@ -240,16 +231,6 @@ function UserMiniTable({
                   {numCell(a.elevationGainFeet, 0)}
                 </td>
                 <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} engineVersion={a.engineVersion} />
-                {canDelete && (
-                  <td className="border border-border px-1 py-0.5 text-center">
-                      <button
-                        onClick={() => onDelete(a.id)}
-                        className="text-destructive hover:underline leading-none"
-                      >
-                        x
-                      </button>
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>
@@ -267,7 +248,6 @@ function UserMiniTable({
               <td className="border border-border px-1 py-1 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
                 {totals.pts.toFixed(1)}
               </td>
-              {canDelete && <td className="border border-border px-1 py-1 w-4"></td>}
             </tr>
           </tfoot>
         </table>
@@ -286,6 +266,7 @@ export default function ActivitiesPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [activeTab, setActiveTab] = useState<number | "all">("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [season, setSeason] = useState<number>(new Date().getFullYear());
   const [cumulative, setCumulative] = useState<{
     data: { date: string; [k: string]: string | number | null }[];
@@ -298,14 +279,10 @@ export default function ActivitiesPage() {
   const seasonOptions = Array.from({ length: currentYear - 2022 + 1 }, (_, i) => 2022 + i).reverse();
 
   const users = useMemo(() => {
-    const map = new Map<number, UserInfo>();
-    for (const a of activities) {
-      if (!map.has(a.userId)) {
-        map.set(a.userId, { id: a.userId, name: a.userName, color: a.userColor });
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [activities]);
+    return leaderboard
+      .map((l) => ({ id: l.userId, name: l.name, color: l.color }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [leaderboard]);
 
   // activeTab defaults to "all" — no auto-select
 
@@ -359,6 +336,47 @@ export default function ActivitiesPage() {
     if (res.ok) loadActivities();
   }
 
+  async function handleBulkDelete() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} activit${ids.length === 1 ? "y" : "ies"}?`)) return;
+    const results = await Promise.all(
+      ids.map((id) => fetch(`/api/activities/${id}`, { method: "DELETE" }))
+    );
+    if (results.some((r) => r.ok)) {
+      setSelected(new Set());
+      loadActivities();
+    }
+  }
+
+  function toggleSelected(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const deletable = filtered.filter((a) => a.userId === currentUserId);
+    if (deletable.length === 0) return;
+    const allSelected = deletable.every((a) => selected.has(a.id));
+    if (allSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const a of deletable) next.delete(a.id);
+        return next;
+      });
+    } else {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const a of deletable) next.add(a.id);
+        return next;
+      });
+    }
+  }
+
   function handleSort(field: SortField) {
     if (sortField === field) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -407,6 +425,10 @@ export default function ActivitiesPage() {
   // Kidz column is non-sortable, rendered separately
 
   const visibleColumns = sheetColumns.filter((c) => !c.hideOnUser || showUserCol);
+
+  const canDeleteInSheet = currentUserId !== null && season === currentYear;
+  const deletableInView = canDeleteInSheet ? filtered.filter((a) => a.userId === currentUserId) : [];
+  const allDeletableSelected = deletableInView.length > 0 && deletableInView.every((a) => selected.has(a.id));
 
   return (
     <div className="px-4 py-4 max-w-full">
@@ -637,9 +659,6 @@ export default function ActivitiesPage() {
               key={u.id}
               user={u}
               activities={activitiesByUser.get(u.id) || []}
-              currentUserId={currentUserId}
-              canDelete={u.id === currentUserId && season === currentYear}
-              onDelete={handleDelete}
             />
           ))}
         </div>
@@ -675,6 +694,14 @@ export default function ActivitiesPage() {
               </button>
             ))}
             <div className="flex-1" />
+            {selected.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="px-2 py-0.5 text-xs font-medium text-destructive border border-destructive/30 hover:bg-destructive/10 mx-1"
+              >
+                Delete {selected.size}
+              </button>
+            )}
             <span className="text-xs text-muted-foreground px-2 py-1.5">
               {filtered.length} rows
             </span>
@@ -709,7 +736,17 @@ export default function ActivitiesPage() {
                       <span className="text-muted-foreground">{sortArrow(col.field)}</span>
                     </th>
                   ))}
-                  <th className="border border-border px-2 py-1.5 font-semibold text-left w-8"></th>
+                  <th className="border border-border px-2 py-1.5 font-semibold text-left w-8">
+                    {canDeleteInSheet && deletableInView.length > 0 && (
+                      <input
+                        type="checkbox"
+                        checked={allDeletableSelected}
+                        onChange={toggleSelectAll}
+                        className="rounded"
+                        title="Select all your activities"
+                      />
+                    )}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -773,13 +810,12 @@ export default function ActivitiesPage() {
                     <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} engineVersion={a.engineVersion} className="px-2 py-1" />
                     <td className="border border-border px-2 py-1 text-center">
                       {a.userId === currentUserId && season === currentYear && (
-                        <button
-                          onClick={() => handleDelete(a.id)}
-                          className="text-destructive hover:underline"
-                          title="Delete"
-                        >
-                          x
-                        </button>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(a.id)}
+                          onChange={() => toggleSelected(a.id)}
+                          className="rounded"
+                        />
                       )}
                     </td>
                   </tr>
