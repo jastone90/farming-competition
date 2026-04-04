@@ -244,106 +244,103 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Profile & Strava */}
-          <div className="border border-border">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/70">
-                  <th className="border border-border px-2 py-1.5 text-left font-semibold" colSpan={2}>
-                    Profile & Strava
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="bg-background">
-                  <td className="border border-border px-2 py-1.5 font-semibold w-1/3">User</td>
-                  <td className="border border-border px-2 py-1.5">
+          {/* Account */}
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="px-3 py-2 bg-muted/50">
+              <h2 className="text-sm font-bold">Account</h2>
+            </div>
+            <div className="text-xs">
+              <div className="flex items-center border-b border-border/50 bg-background">
+                <div className="px-3 py-2 font-semibold w-1/4">User</div>
+                <div className="px-3 py-2">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="inline-block h-3 w-3 rounded-full"
+                      style={{ backgroundColor: user.color }}
+                    />
+                    {user.name}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center border-b border-border/50 bg-muted/20">
+                <div className="px-3 py-2 font-semibold w-1/4">Strava Status</div>
+                <div className="px-3 py-2">
+                  {user.stravaAthleteId ? (
                     <span className="inline-flex items-center gap-1.5">
-                      <span
-                        className="inline-block h-3 w-3 rounded-full"
-                        style={{ backgroundColor: user.color }}
-                      />
-                      {user.name}
+                      <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
+                      <span className="text-green-600 dark:text-green-400 font-medium">Connected</span>
+                      <span className="text-muted-foreground">(Athlete {user.stravaAthleteId})</span>
                     </span>
-                  </td>
-                </tr>
-                <tr className="bg-muted/30">
-                  <td className="border border-border px-2 py-1.5 font-semibold">Strava Status</td>
-                  <td className="border border-border px-2 py-1.5">
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" />
+                      <span className="text-yellow-600 dark:text-yellow-400 font-medium">Not connected</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center bg-background">
+                <div className="px-3 py-2.5 font-semibold w-1/4">Actions</div>
+                <div className="px-3 py-2.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <button
+                      onClick={() => { setShowPinModal(true); setPinMsg(null); setCurrentPin(""); setNewPin(""); }}
+                      className="px-2.5 py-1 text-xs font-medium border border-input rounded hover:bg-muted"
+                    >
+                      Change PIN
+                    </button>
+                    <button
+                      onClick={() => { setShowColorModal(true); setColorMsg(null); setSelectedColor(user.color); }}
+                      className="px-2.5 py-1 text-xs font-medium border border-input rounded hover:bg-muted"
+                    >
+                      Change Color
+                    </button>
+                    <button
+                      onClick={() => { setShowAddModal(true); setAddMsg(null); setNewName(""); setNewUserPin(""); setNewColor(""); }}
+                      className="px-2.5 py-1 text-xs font-medium border border-input rounded hover:bg-muted"
+                    >
+                      Add Farmer
+                    </button>
                     {user.stravaAthleteId ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
-                        <span className="text-green-600 dark:text-green-400 font-medium">Connected</span>
-                        <span className="text-muted-foreground">(Athlete {user.stravaAthleteId})</span>
-                      </span>
+                      <button
+                        onClick={handleSync}
+                        disabled={syncing}
+                        className="px-2.5 py-1 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 rounded disabled:opacity-50 min-w-[180px]"
+                      >
+                        {syncing ? "Syncing..." : <>Strava&#8482; Sync <span className="text-[10px] opacity-80">({new Date().getFullYear()} activities)</span></>}
+                      </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" />
-                        <span className="text-yellow-600 dark:text-yellow-400 font-medium">Not connected</span>
-                      </span>
+                      <a
+                        href="/api/strava/auth"
+                        className="px-2.5 py-1 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 rounded"
+                      >
+                        Connect Strava
+                      </a>
                     )}
-                  </td>
-                </tr>
-                <tr className="bg-background">
-                  <td className="border border-border px-2 py-1.5 font-semibold">Actions</td>
-                  <td className="border border-border px-2 py-1.5">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => { setShowPinModal(true); setPinMsg(null); setCurrentPin(""); setNewPin(""); }}
-                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
-                      >
-                        Change PIN
-                      </button>
-                      <button
-                        onClick={() => { setShowColorModal(true); setColorMsg(null); setSelectedColor(user.color); }}
-                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
-                      >
-                        Change Color
-                      </button>
-                      <button
-                        onClick={() => { setShowAddModal(true); setAddMsg(null); setNewName(""); setNewUserPin(""); setNewColor(""); }}
-                        className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
-                      >
-                        Add Farmer
-                      </button>
-                      {user.stravaAthleteId ? (
-                        <button
-                          onClick={handleSync}
-                          disabled={syncing}
-                          className="px-2 py-0.5 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600 disabled:opacity-50 min-w-[180px]"
-                        >
-                          {syncing ? "Syncing..." : <>Strava&#8482; Sync <span className="text-[10px] opacity-80">({new Date().getFullYear()} activities)</span></>}
-                        </button>
-                      ) : (
-                        <a
-                          href="/api/strava/auth"
-                          className="px-2 py-0.5 text-xs font-medium bg-orange-500 text-white hover:bg-orange-600 border border-orange-600"
-                        >
-                          Connect Strava
-                        </a>
-                      )}
-                      {syncResult && (
-                        <span className="text-muted-foreground">{syncResult}</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    {syncResult && (
+                      <span className="text-muted-foreground">{syncResult}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Current Scoring Rules */}
-          <div>
-            <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-              <span>Scoring Engine</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded">
-                v{currentVersion}
-              </span>
+          {/* Scoring Engine */}
+          <div className="mt-6 border border-amber-200 dark:border-amber-800/50 rounded-lg overflow-hidden bg-amber-50/70 dark:bg-amber-950/30">
+            <div className="px-4 py-3">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold">Scoring Engine</h2>
+                <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded">
+                  v{currentVersion}
+                </span>
+              </div>
             </div>
             {!loaded ? (
-              <div className="text-xs text-muted-foreground">Loading...</div>
+              <div className="px-4 pb-4 text-xs text-muted-foreground">Loading...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="px-4 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Running */}
                 <ScoringCard title="Running">
                   <FormulaLine label="Distance">× <Val>{runPPM.toFixed(2)}</Val> pts/mi</FormulaLine>
@@ -416,29 +413,30 @@ export default function SettingsPage() {
                   </div>
                 </ScoringCard>
               </div>
+              </div>
             )}
 
-            {/* Version Audit Log */}
+            {/* Version History */}
             {versions.length > 0 && (
-              <div className="mt-4">
+              <div className="px-4 pb-4">
                 <div className="text-xs font-semibold mb-1.5 text-muted-foreground">Version History</div>
-                <div className="border border-border">
+                <div className="border border-border rounded-lg overflow-hidden">
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr className="bg-muted/70">
-                        <th className="border border-border px-2 py-1.5 text-left font-semibold w-20">Version</th>
-                        <th className="border border-border px-2 py-1.5 text-left font-semibold w-28">Effective</th>
-                        <th className="border border-border px-2 py-1.5 text-left font-semibold">Summary</th>
+                        <th className="px-2 py-1.5 text-left font-semibold w-20">Version</th>
+                        <th className="px-2 py-1.5 text-left font-semibold w-28">Effective</th>
+                        <th className="px-2 py-1.5 text-left font-semibold">Summary</th>
                       </tr>
                     </thead>
                     <tbody>
                       {versions.map((v, i) => (
                         <tr key={v.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
-                          <td className="border border-border px-2 py-1.5 font-mono font-semibold">v{v.version}</td>
-                          <td className="border border-border px-2 py-1.5">
+                          <td className="px-2 py-1.5 font-mono font-semibold border-t border-border/50">v{v.version}</td>
+                          <td className="px-2 py-1.5 border-t border-border/50">
                             {new Date(v.effectiveDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </td>
-                          <td className="border border-border px-2 py-1.5">{v.summary}</td>
+                          <td className="px-2 py-1.5 border-t border-border/50">{v.summary}</td>
                         </tr>
                       ))}
                     </tbody>
