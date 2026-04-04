@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 
-interface LeaderboardEntry {
-  userId: number;
-  name: string;
-  color: string;
+
+interface TypeBreakdown {
+  type: string;
+  count: number;
   totalPoints: number;
-  activityCount: number;
-  totalMiles: number;
-  totalElevation: number;
+  totalMiles: number | null;
+  totalElevation: number | null;
+  totalDuration: number | null;
+  totalPoundsLifted: number | null;
 }
 
 interface Champion {
@@ -63,53 +63,30 @@ interface Records {
 
 export default function Dashboard() {
   const currentYear = new Date().getFullYear();
-  const [season, setSeason] = useState(currentYear);
-  const [data, setData] = useState<{
-    season: number;
-    leaderboard: LeaderboardEntry[];
-  } | null>(null);
   const [champions, setChampions] = useState<Champion[]>([]);
   const [shameList, setShameList] = useState<Shamer[]>([]);
   const [records, setRecords] = useState<Records | null>(null);
+  const [breakdown, setBreakdown] = useState<TypeBreakdown[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const seasonOptions = Array.from(
-    { length: currentYear - 2022 + 1 },
-    (_, i) => 2022 + i
-  ).reverse();
-
-  // Season-dependent fetches
-  const loadSeason = useCallback(() => {
-    setData(null);
-
-    fetch(`/api/leaderboard?season=${season}`)
-      .then((r) => r.json())
-      .then((leaderboardData) => {
-        setData(leaderboardData);
-      })
-      .catch(console.error);
-  }, [season]);
-
+  // Fetch all data once on mount
   useEffect(() => {
-    loadSeason();
-  }, [loadSeason]);
-
-  // Hall of Fame — fetch once on mount
-  useEffect(() => {
-    fetch("/api/leaderboard/history")
-      .then((r) => r.json())
-      .then((d) => {
-        setChampions(d.champions || []);
-        setShameList(d.shameList || []);
+    Promise.all([
+      fetch("/api/leaderboard/history").then((r) => r.json()),
+      fetch("/api/leaderboard/records").then((r) => r.json()),
+      fetch("/api/activities/breakdown").then((r) => r.json()),
+    ])
+      .then(([historyData, recordsData, breakdownData]) => {
+        setChampions(historyData.champions || []);
+        setShameList(historyData.shameList || []);
+        setRecords(recordsData);
+        setBreakdown(breakdownData);
+        setLoading(false);
       })
-      .catch(() => {});
-
-    fetch("/api/leaderboard/records")
-      .then((r) => r.json())
-      .then((d) => setRecords(d))
-      .catch(() => {});
+      .catch(() => setLoading(false));
   }, []);
 
-  if (!data) {
+  if (loading) {
     return (
       <div className="text-center text-muted-foreground py-8 text-sm">
         Loading...
@@ -117,25 +94,6 @@ export default function Dashboard() {
     );
   }
 
-  const { leaderboard } = data;
-  const maxPoints = Math.max(...leaderboard.map((l) => l.totalPoints), 1);
-  const totalActivities = leaderboard.reduce((sum, l) => sum + l.activityCount, 0);
-  const totalMiles = leaderboard.reduce((s, l) => s + l.totalMiles, 0);
-  const totalElevation = leaderboard.reduce((s, l) => s + l.totalElevation, 0);
-  const leaderPoints = leaderboard[0]?.totalPoints ?? 0;
-
-  const isPastSeason = season < currentYear;
-  const now = new Date();
-  const seasonStart = new Date(season, 0, 1);
-  const weekNumber = isPastSeason
-    ? 51
-    : Math.max(
-        1,
-        Math.ceil(
-          (now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
-        )
-      );
-  const progressPct = isPastSeason ? 100 : Math.min((weekNumber / 51) * 100, 100);
 
   // Hall of Fame: only completed seasons with a champion
   const hallOfFame = champions.filter(
@@ -148,164 +106,70 @@ export default function Dashboard() {
 
   return (
     <div className="px-4 py-4 max-w-full">
-      {/* Season Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold">Dashboard</h1>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setSeason((s) => Math.max(2022, s - 1))}
-              disabled={season <= 2022}
-              className="px-1.5 py-0.5 text-xs font-bold border border-border bg-background hover:bg-muted disabled:opacity-30"
-            >
-              &lt;
-            </button>
-            <select
-              value={season}
-              onChange={(e) => setSeason(Number(e.target.value))}
-              className="px-2 py-0.5 text-sm font-bold border border-border bg-background tabular-nums"
-            >
-              {seasonOptions.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => setSeason((s) => Math.min(currentYear, s + 1))}
-              disabled={season >= currentYear}
-              className="px-1.5 py-0.5 text-xs font-bold border border-border bg-background hover:bg-muted disabled:opacity-30"
-            >
-              &gt;
-            </button>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            Jan 1 – Dec 25
-          </span>
-        </div>
-      </div>
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-            Season Progress
-          </span>
-          <span className="text-[10px] font-bold tabular-nums text-amber-700 dark:text-amber-400">
-            Week {weekNumber} of 51 · {Math.round(progressPct)}%
-          </span>
-        </div>
-        <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-border">
-          <div
-            className="h-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-400 dark:to-amber-500 rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
+      <h1 className="text-lg font-bold mb-3">The Almanac</h1>
 
-      {/* Standings Table */}
-      <div className="border border-border mb-4">
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="bg-muted/70">
-              <th className="border border-border px-2 py-1.5 text-left font-semibold w-8">#</th>
-              <th className="border border-border px-2 py-1.5 text-left font-semibold">Competitor</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Total Pts</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Gap</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Acts</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Pts/Act</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Miles</th>
-              <th className="border border-border px-2 py-1.5 text-right font-semibold">Elev</th>
-              <th className="border border-border px-2 py-1.5 text-left font-semibold" style={{ width: "20%" }}>
-                Progress
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaderboard.map((entry, i) => {
-              const pct =
-                maxPoints > 0 ? (entry.totalPoints / maxPoints) * 100 : 0;
-              const gap = leaderPoints - entry.totalPoints;
-              const ptsPerAct = entry.activityCount > 0 ? entry.totalPoints / entry.activityCount : 0;
-
-              return (
-                <tr
-                  key={entry.userId}
-                  className={`hover:bg-amber-50 dark:hover:bg-amber-950/20 ${
-                    i === 0
-                      ? "bg-amber-50/50 dark:bg-amber-950/10 font-semibold"
-                      : i % 2 === 0
-                        ? "bg-background"
-                        : "bg-muted/30"
-                  }`}
-                >
-                  <td className="border border-border px-2 py-1.5 tabular-nums">
-                    {i + 1}
-                  </td>
-                  <td className="border border-border px-2 py-1.5">
-                    <Link href={`/profile/${entry.userId}`} className="inline-flex items-center gap-1.5 hover:underline">
-                      <span
-                        className="inline-block h-3 w-3 rounded-full shrink-0"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                      {entry.name}
-                    </Link>
-                  </td>
-                  <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
-                    {entry.totalPoints.toFixed(1)}
-                  </td>
-                  <td className="border border-border px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                    {i === 0 ? "\u2013" : `-${gap.toFixed(1)}`}
-                  </td>
-                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                    {entry.activityCount}
-                  </td>
-                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                    {ptsPerAct.toFixed(1)}
-                  </td>
-                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                    {entry.totalMiles.toFixed(0)}
-                  </td>
-                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                    {entry.totalElevation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  </td>
-                  <td className="border border-border px-2 py-1.5">
-                    <div className="h-3 bg-muted rounded-sm overflow-hidden">
-                      <div
-                        className="h-full rounded-sm"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: entry.color,
-                        }}
-                      />
+      {/* Activity Type Breakdown */}
+      {breakdown.length > 0 && (() => {
+        const totalPoints = breakdown.reduce((s, b) => s + b.totalPoints, 0);
+        const totalCount = breakdown.reduce((s, b) => s + b.count, 0);
+        const typeConfig: Record<string, { icon: string; label: string; metric: (b: TypeBreakdown) => string }> = {
+          ride: { icon: "\uD83D\uDEB4", label: "Riding", metric: (b) => `${(b.totalMiles ?? 0).toFixed(0)} mi` },
+          run: { icon: "\uD83C\uDFC3", label: "Running", metric: (b) => `${(b.totalMiles ?? 0).toFixed(0)} mi` },
+          weight_training: { icon: "\uD83C\uDFCB\uFE0F", label: "Haybailz", metric: (b) => `${((b.totalPoundsLifted ?? 0) / 1000).toFixed(0)}k lbs` },
+          swimming: { icon: "\uD83C\uDFCA", label: "Swimming", metric: (b) => `${(b.totalMiles ?? 0).toFixed(1)} mi` },
+        };
+        return (
+          <div className="border border-border mb-4">
+            <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border flex items-center justify-between">
+              <span>Farming Breakdown — All Time</span>
+              <span className="font-normal text-muted-foreground">{totalCount.toLocaleString()} activities · {totalPoints.toFixed(0)} pts</span>
+            </div>
+            <div className="divide-y divide-border">
+              {breakdown.map((b) => {
+                const cfg = typeConfig[b.type] || { icon: "\u2753", label: b.type, metric: () => "" };
+                const pctOfPoints = totalPoints > 0 ? (b.totalPoints / totalPoints) * 100 : 0;
+                const pctOfCount = totalCount > 0 ? (b.count / totalCount) * 100 : 0;
+                return (
+                  <div key={b.type} className="px-3 py-2.5 flex items-center gap-3">
+                    <div className="text-base w-6 text-center shrink-0">{cfg.icon}</div>
+                    <div className="w-20 shrink-0">
+                      <div className="text-xs font-semibold">{cfg.label}</div>
+                      <div className="text-[10px] text-muted-foreground">{cfg.metric(b)}</div>
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="bg-muted/70 font-semibold">
-              <td className="border border-border px-2 py-1.5" colSpan={2}>
-                TOTALS
-              </td>
-              <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
-                {leaderboard.reduce((s, l) => s + l.totalPoints, 0).toFixed(1)}
-              </td>
-              <td className="border border-border px-2 py-1.5"></td>
-              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                {totalActivities}
-              </td>
-              <td className="border border-border px-2 py-1.5"></td>
-              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                {totalMiles.toFixed(0)}
-              </td>
-              <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                {totalElevation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-              </td>
-              <td className="border border-border px-2 py-1.5"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex gap-1 items-center mb-1">
+                        <div className="flex-1 h-4 bg-muted rounded-sm overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500/80 dark:bg-amber-400/70 rounded-sm transition-all duration-500"
+                            style={{ width: `${pctOfPoints}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-bold tabular-nums text-amber-700 dark:text-amber-400 w-14 text-right shrink-0">
+                          {b.totalPoints.toFixed(0)} pts
+                        </span>
+                      </div>
+                      <div className="flex gap-1 items-center">
+                        <div className="flex-1 h-2 bg-muted rounded-sm overflow-hidden">
+                          <div
+                            className="h-full bg-muted-foreground/30 rounded-sm transition-all duration-500"
+                            style={{ width: `${pctOfCount}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] tabular-nums text-muted-foreground w-14 text-right shrink-0">
+                          {b.count} acts
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground tabular-nums w-10 text-right shrink-0">
+                      {Math.round(pctOfPoints)}%
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Hall of Fame + Hall of Shame */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

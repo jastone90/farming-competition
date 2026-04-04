@@ -2,8 +2,19 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { ManualEntryForm } from "@/components/manual-entry-form";
 import { CumulativeChart } from "@/components/cumulative-chart";
+
+interface LeaderboardEntry {
+  userId: number;
+  name: string;
+  color: string;
+  totalPoints: number;
+  activityCount: number;
+  totalMiles: number;
+  totalElevation: number;
+}
 
 interface ActivityData {
   id: number;
@@ -285,6 +296,7 @@ export default function ActivitiesPage() {
     users: { name: string; color: string }[];
     decStartIndex: number;
   } | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   const currentYear = new Date().getFullYear();
   const seasonOptions = Array.from({ length: currentYear - 2022 + 1 }, (_, i) => 2022 + i).reverse();
@@ -332,6 +344,10 @@ export default function ActivitiesPage() {
     fetch(`/api/leaderboard/cumulative?season=${season}`)
       .then((r) => r.json())
       .then(setCumulative)
+      .catch(() => {});
+    fetch(`/api/leaderboard?season=${season}`)
+      .then((r) => r.json())
+      .then((d) => setLeaderboard(d.leaderboard || []))
       .catch(() => {});
     fetch("/api/auth/session")
       .then((r) => r.json())
@@ -479,6 +495,125 @@ export default function ActivitiesPage() {
           </button>
         </div>
       </div>
+
+      {/* Season Progress Bar */}
+      {(() => {
+        const isPastSeason = season < currentYear;
+        const now = new Date();
+        const seasonStart = new Date(season, 0, 1);
+        const weekNumber = isPastSeason
+          ? 51
+          : Math.max(1, Math.ceil((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)));
+        const progressPct = isPastSeason ? 100 : Math.min((weekNumber / 51) * 100, 100);
+        return (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Season Progress
+              </span>
+              <span className="text-[10px] font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                Week {weekNumber} of 51 · {Math.round(progressPct)}%
+              </span>
+            </div>
+            <div className="h-2.5 bg-muted rounded-full overflow-hidden border border-border">
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-400 dark:to-amber-500 rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Standings Table */}
+      {leaderboard.length > 0 && (() => {
+        const lbMaxPoints = Math.max(...leaderboard.map((l) => l.totalPoints), 1);
+        const lbLeaderPoints = leaderboard[0]?.totalPoints ?? 0;
+        const lbTotalActivities = leaderboard.reduce((sum, l) => sum + l.activityCount, 0);
+        const lbTotalMiles = leaderboard.reduce((s, l) => s + l.totalMiles, 0);
+        const lbTotalElevation = leaderboard.reduce((s, l) => s + l.totalElevation, 0);
+        return (
+          <div className="border border-border mb-4">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-muted/70">
+                  <th className="border border-border px-2 py-1.5 text-left font-semibold w-8">#</th>
+                  <th className="border border-border px-2 py-1.5 text-left font-semibold">Competitor</th>
+                  <th className="border border-border px-2 py-1.5 text-right font-semibold">Total Pts</th>
+                  <th className="border border-border px-2 py-1.5 text-right font-semibold">Gap</th>
+                  <th className="border border-border px-2 py-1.5 text-right font-semibold">Acts</th>
+                  <th className="border border-border px-2 py-1.5 text-right font-semibold">Pts/Act</th>
+                  <th className="border border-border px-2 py-1.5 text-right font-semibold">Miles</th>
+                  <th className="border border-border px-2 py-1.5 text-right font-semibold">Elev</th>
+                  <th className="border border-border px-2 py-1.5 text-left font-semibold" style={{ width: "20%" }}>
+                    Progress
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaderboard.map((entry, i) => {
+                  const pct = lbMaxPoints > 0 ? (entry.totalPoints / lbMaxPoints) * 100 : 0;
+                  const gap = lbLeaderPoints - entry.totalPoints;
+                  const ptsPerAct = entry.activityCount > 0 ? entry.totalPoints / entry.activityCount : 0;
+                  return (
+                    <tr
+                      key={entry.userId}
+                      className={`hover:bg-amber-50 dark:hover:bg-amber-950/20 ${
+                        i === 0
+                          ? "bg-amber-50/50 dark:bg-amber-950/10 font-semibold"
+                          : i % 2 === 0
+                            ? "bg-background"
+                            : "bg-muted/30"
+                      }`}
+                    >
+                      <td className="border border-border px-2 py-1.5 tabular-nums">{i + 1}</td>
+                      <td className="border border-border px-2 py-1.5">
+                        <Link href={`/profile/${entry.userId}`} className="inline-flex items-center gap-1.5 hover:underline">
+                          <span className="inline-block h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                          {entry.name}
+                        </Link>
+                      </td>
+                      <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
+                        {entry.totalPoints.toFixed(1)}
+                      </td>
+                      <td className="border border-border px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+                        {i === 0 ? "\u2013" : `-${gap.toFixed(1)}`}
+                      </td>
+                      <td className="border border-border px-2 py-1.5 text-right tabular-nums">{entry.activityCount}</td>
+                      <td className="border border-border px-2 py-1.5 text-right tabular-nums">{ptsPerAct.toFixed(1)}</td>
+                      <td className="border border-border px-2 py-1.5 text-right tabular-nums">{entry.totalMiles.toFixed(0)}</td>
+                      <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                        {entry.totalElevation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </td>
+                      <td className="border border-border px-2 py-1.5">
+                        <div className="h-3 bg-muted rounded-sm overflow-hidden">
+                          <div className="h-full rounded-sm" style={{ width: `${pct}%`, backgroundColor: entry.color }} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/70 font-semibold">
+                  <td className="border border-border px-2 py-1.5" colSpan={2}>TOTALS</td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
+                    {leaderboard.reduce((s, l) => s + l.totalPoints, 0).toFixed(1)}
+                  </td>
+                  <td className="border border-border px-2 py-1.5"></td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">{lbTotalActivities}</td>
+                  <td className="border border-border px-2 py-1.5"></td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">{lbTotalMiles.toFixed(0)}</td>
+                  <td className="border border-border px-2 py-1.5 text-right tabular-nums">
+                    {lbTotalElevation.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </td>
+                  <td className="border border-border px-2 py-1.5"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        );
+      })()}
 
       {/* Cumulative Points Chart */}
       {cumulative && cumulative.data.length > 0 && (
