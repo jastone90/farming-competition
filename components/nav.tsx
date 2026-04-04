@@ -9,7 +9,6 @@ const navLinks = [
   { href: "/activities", label: "Activities" },
   { href: "/amendments", label: "Amendments" },
   { href: "/", label: "Almanac" },
-  { href: "/audit", label: "Audit Log" },
   { href: "/settings", label: "Settings" },
 ];
 
