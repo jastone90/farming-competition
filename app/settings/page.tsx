@@ -412,6 +412,16 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </ScoringCard>
+
+                {/* Off Season */}
+                <ScoringCard title="Off Season">
+                  <FormulaLine label="Dec 26 – Dec 31">= <Val>0</Val> points</FormulaLine>
+                  <div className="border-t border-border pt-2 mt-1">
+                    <div className="text-muted-foreground">
+                      All activities recorded between Dec 26 and Dec 31 earn zero points regardless of type.
+                    </div>
+                  </div>
+                </ScoringCard>
               </div>
               </div>
             )}
