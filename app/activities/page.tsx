@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ManualEntryForm } from "@/components/manual-entry-form";
 import { CumulativeChart } from "@/components/cumulative-chart";
+import { ACTIVITY_TYPE_LABELS } from "@/lib/constants";
 
 interface LeaderboardEntry {
   userId: number;
@@ -68,24 +69,19 @@ function pointsIntensity(points: number, maxPoints: number): string {
 }
 
 function computeTotals(items: ActivityData[]) {
-  let dist = 0, dur = 0, elev = 0, cal = 0, pts = 0;
+  let dist = 0, dur = 0, elev = 0, cal = 0, pts = 0, lbs = 0;
   for (const a of items) {
     dist += a.distanceMiles ?? 0;
     dur += a.durationMinutes ?? 0;
     elev += a.elevationGainFeet ?? 0;
     cal += a.caloriesBurned ?? 0;
+    lbs += a.poundsLifted ?? 0;
     pts += a.modifiedPoints;
   }
-  return { dist, dur, elev, cal, pts };
+  return { dist, dur, elev, cal, lbs, pts };
 }
 
-const typeLabels: Record<string, string> = {
-  ride: "Ride",
-  run: "Run",
-  weight_training: "Haybailz",
-  swimming: "Swim",
-  other: "Other",
-};
+const typeLabels = ACTIVITY_TYPE_LABELS as Record<string, string>;
 
 function formatDate(d: string) {
   const dt = new Date(d + "T00:00:00");
@@ -805,7 +801,7 @@ export default function ActivitiesPage() {
                       {Math.round(totals.elev)}
                     </td>
                     <td className="border border-border px-2 py-1.5 text-right tabular-nums">
-                      {Math.round(totals.cal)}
+                      {Math.round(totals.lbs)}
                     </td>
                     <td className="border border-border px-2 py-1.5"></td>
                     <td className="border border-border px-2 py-1.5 text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">

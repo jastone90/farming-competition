@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import { ScoreBreakdown } from "./score-breakdown";
+import { ACTIVITY_TYPE_LABELS } from "@/lib/constants";
 
-const activityTypes = [
-  { value: "run", label: "Running" },
-  { value: "ride", label: "Cycling" },
-  { value: "weight_training", label: "Haybailz" },
-  { value: "swimming", label: "Swimming" },
-];
+const activityTypes = Object.entries(ACTIVITY_TYPE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 interface ManualEntryFormProps {
   onClose: () => void;

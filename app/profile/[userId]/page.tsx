@@ -21,21 +21,11 @@ import {
   Label,
 } from "recharts";
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+import { ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_COLORS } from "@/lib/constants";
+import { MONTH_NAMES, formatMonth, formatDate } from "@/lib/utils";
 
-const TYPE_COLORS: Record<string, string> = {
-  ride: "#3B82F6",
-  run: "#22C55E",
-  swimming: "#06B6D4",
-  weight_training: "#F59E0B",
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  ride: "Ride",
-  run: "Run",
-  swimming: "Swimming",
-  weight_training: "Weights",
-};
+const TYPE_COLORS = ACTIVITY_TYPE_COLORS;
+const TYPE_LABELS = ACTIVITY_TYPE_LABELS;
 
 const SEASON_COLORS: Record<number, string> = {
   2022: "#6366F1",
@@ -45,16 +35,6 @@ const SEASON_COLORS: Record<number, string> = {
   2026: "#8B5CF6",
   2027: "#06B6D4",
 };
-
-function formatMonth(ym: string) {
-  const [year, month] = ym.split("-");
-  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`;
-}
-
-function formatDate(ymd: string) {
-  const [year, month, day] = ymd.split("-");
-  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${parseInt(day, 10)}, ${year}`;
-}
 
 interface ProfileData {
   user: { id: number; name: string; color: string };

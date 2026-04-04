@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import { formatMonth, formatDate } from "@/lib/utils";
 
 interface TypeBreakdown {
   type: string;
@@ -519,18 +519,6 @@ export default function Dashboard() {
 
     </div>
   );
-}
-
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function formatMonth(ym: string) {
-  const [year, month] = ym.split("-");
-  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`;
-}
-
-function formatDate(ymd: string) {
-  const [year, month, day] = ymd.split("-");
-  return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${parseInt(day, 10)}, ${year}`;
 }
 
 function RecordCard({
