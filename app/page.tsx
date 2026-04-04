@@ -1,16 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { formatMonth, formatDate } from "@/lib/utils";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 interface TypeBreakdown {
   type: string;
+  isIndoor: boolean;
   count: number;
   totalPoints: number;
   totalMiles: number | null;
   totalElevation: number | null;
   totalDuration: number | null;
   totalPoundsLifted: number | null;
+}
+
+interface FarmerOfMonth {
+  name: string;
+  color: string;
+  totalPoints: number;
+  activityCount: number;
+  month: string;
 }
 
 interface Champion {
@@ -67,6 +77,7 @@ export default function Dashboard() {
   const [shameList, setShameList] = useState<Shamer[]>([]);
   const [records, setRecords] = useState<Records | null>(null);
   const [breakdown, setBreakdown] = useState<TypeBreakdown[]>([]);
+  const [farmerOfMonth, setFarmerOfMonth] = useState<FarmerOfMonth | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch all data once on mount
@@ -75,12 +86,14 @@ export default function Dashboard() {
       fetch("/api/leaderboard/history").then((r) => r.json()),
       fetch("/api/leaderboard/records").then((r) => r.json()),
       fetch("/api/activities/breakdown").then((r) => r.json()),
+      fetch("/api/activities/farmer-of-month").then((r) => r.json()),
     ])
-      .then(([historyData, recordsData, breakdownData]) => {
+      .then(([historyData, recordsData, breakdownData, farmerData]) => {
         setChampions(historyData.champions || []);
         setShameList(historyData.shameList || []);
         setRecords(recordsData);
         setBreakdown(breakdownData);
+        setFarmerOfMonth(farmerData);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -110,62 +123,157 @@ export default function Dashboard() {
 
       {/* Activity Type Breakdown */}
       {breakdown.length > 0 && (() => {
-        const totalPoints = breakdown.reduce((s, b) => s + b.totalPoints, 0);
-        const totalCount = breakdown.reduce((s, b) => s + b.count, 0);
+        // Merge weight_training indoor/outdoor into one row
+        const merged: TypeBreakdown[] = [];
+        const wtAcc: TypeBreakdown = { type: "weight_training", isIndoor: true, count: 0, totalPoints: 0, totalMiles: null, totalElevation: null, totalDuration: null, totalPoundsLifted: 0 };
+        let hasWt = false;
+        for (const b of breakdown) {
+          if (b.type === "weight_training") {
+            hasWt = true;
+            wtAcc.count += b.count;
+            wtAcc.totalPoints += b.totalPoints;
+            wtAcc.totalPoundsLifted = (wtAcc.totalPoundsLifted ?? 0) + (b.totalPoundsLifted ?? 0);
+            wtAcc.totalDuration = (wtAcc.totalDuration ?? 0) + (b.totalDuration ?? 0);
+          } else {
+            merged.push(b);
+          }
+        }
+        if (hasWt) merged.push(wtAcc);
+        merged.sort((a, b) => b.totalPoints - a.totalPoints);
+
+        const totalPoints = merged.reduce((s, b) => s + b.totalPoints, 0);
+        const totalCount = merged.reduce((s, b) => s + b.count, 0);
         const typeConfig: Record<string, { icon: string; label: string; metric: (b: TypeBreakdown) => string }> = {
           ride: { icon: "\uD83D\uDEB4", label: "Riding", metric: (b) => `${(b.totalMiles ?? 0).toFixed(0)} mi` },
           run: { icon: "\uD83C\uDFC3", label: "Running", metric: (b) => `${(b.totalMiles ?? 0).toFixed(0)} mi` },
           weight_training: { icon: "\uD83C\uDFCB\uFE0F", label: "Haybailz", metric: (b) => `${((b.totalPoundsLifted ?? 0) / 1000).toFixed(0)}k lbs` },
           swimming: { icon: "\uD83C\uDFCA", label: "Swimming", metric: (b) => `${(b.totalMiles ?? 0).toFixed(1)} mi` },
         };
+        const indoorTypeConfig: Record<string, { icon: string; label: string; metric: (b: TypeBreakdown) => string }> = {
+          ride: { icon: "\uD83D\uDEB4", label: "Riding (Indoor)", metric: (b) => `${(b.totalMiles ?? 0).toFixed(0)} mi` },
+          run: { icon: "\uD83C\uDFC3", label: "Running (Indoor)", metric: (b) => `${(b.totalMiles ?? 0).toFixed(0)} mi` },
+          swimming: { icon: "\uD83C\uDFCA", label: "Swimming (Indoor)", metric: (b) => `${(b.totalMiles ?? 0).toFixed(1)} mi` },
+        };
+
+        const pieColors: Record<string, string> = {
+          ride: "#3B82F6",
+          "ride-indoor": "#93C5FD",
+          run: "#22C55E",
+          "run-indoor": "#86EFAC",
+          weight_training: "#F59E0B",
+          swimming: "#06B6D4",
+          "swimming-indoor": "#67E8F9",
+        };
+        const pieData = merged.map((b) => {
+          const cfgMap = (b.isIndoor && b.type !== "weight_training") ? indoorTypeConfig : typeConfig;
+          const cfg = cfgMap[b.type] || typeConfig[b.type] || { label: b.type };
+          const colorKey = (b.isIndoor && b.type !== "weight_training") ? `${b.type}-indoor` : b.type;
+          return { name: cfg.label, value: b.totalPoints, color: pieColors[colorKey] || "#888" };
+        });
+
+        const topType = merged[0];
+        const topColorKey = (topType?.isIndoor && topType?.type !== "weight_training") ? `${topType.type}-indoor` : topType?.type;
+
         return (
-          <div className="border border-border mb-4">
-            <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border flex items-center justify-between">
-              <span>Farming Breakdown — All Time</span>
-              <span className="font-normal text-muted-foreground">{totalCount.toLocaleString()} activities · {totalPoints.toFixed(0)} pts</span>
+          <div className="border border-border rounded-lg mb-4 overflow-hidden">
+            <div className="px-3 py-2 bg-muted/50 text-sm font-bold border-b border-border flex items-center justify-between">
+              <span>Farming Breakdown</span>
+              <span className="text-xs font-normal text-muted-foreground">{totalCount.toLocaleString()} activities logged all-time</span>
             </div>
-            <div className="divide-y divide-border">
-              {breakdown.map((b) => {
-                const cfg = typeConfig[b.type] || { icon: "\u2753", label: b.type, metric: () => "" };
-                const pctOfPoints = totalPoints > 0 ? (b.totalPoints / totalPoints) * 100 : 0;
-                const pctOfCount = totalCount > 0 ? (b.count / totalCount) * 100 : 0;
-                return (
-                  <div key={b.type} className="px-3 py-2.5 flex items-center gap-3">
-                    <div className="text-base w-6 text-center shrink-0">{cfg.icon}</div>
-                    <div className="w-20 shrink-0">
-                      <div className="text-xs font-semibold">{cfg.label}</div>
-                      <div className="text-[10px] text-muted-foreground">{cfg.metric(b)}</div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex gap-1 items-center mb-1">
-                        <div className="flex-1 h-4 bg-muted rounded-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_220px]">
+              <div>
+                {merged.map((b, idx) => {
+                  const cfgMap = (b.isIndoor && b.type !== "weight_training") ? indoorTypeConfig : typeConfig;
+                  const cfg = cfgMap[b.type] || typeConfig[b.type] || { icon: "\u2753", label: b.type, metric: () => "" };
+                  const pctOfPoints = totalPoints > 0 ? (b.totalPoints / totalPoints) * 100 : 0;
+                  const colorKey = (b.isIndoor && b.type !== "weight_training") ? `${b.type}-indoor` : b.type;
+                  const barColor = pieColors[colorKey] || "#F59E0B";
+                  return (
+                    <div
+                      key={`${b.type}-${b.isIndoor}`}
+                      className={`px-3 py-3 flex items-center gap-3 ${idx < merged.length - 1 ? "border-b border-border/50" : ""} hover:bg-muted/30 transition-colors`}
+                    >
+                      <div className="text-lg w-7 text-center shrink-0">{cfg.icon}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between mb-1.5">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs font-semibold">{cfg.label}</span>
+                            <span className="text-[10px] text-muted-foreground">{cfg.metric(b)}</span>
+                          </div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs font-bold tabular-nums" style={{ color: barColor }}>
+                              {b.totalPoints.toFixed(0)} pts
+                            </span>
+                            <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">
+                              {Math.round(pctOfPoints)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-amber-500/80 dark:bg-amber-400/70 rounded-sm transition-all duration-500"
-                            style={{ width: `${pctOfPoints}%` }}
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(pctOfPoints, 1)}%`, backgroundColor: barColor }}
                           />
                         </div>
-                        <span className="text-[10px] font-bold tabular-nums text-amber-700 dark:text-amber-400 w-14 text-right shrink-0">
-                          {b.totalPoints.toFixed(0)} pts
-                        </span>
-                      </div>
-                      <div className="flex gap-1 items-center">
-                        <div className="flex-1 h-2 bg-muted rounded-sm overflow-hidden">
-                          <div
-                            className="h-full bg-muted-foreground/30 rounded-sm transition-all duration-500"
-                            style={{ width: `${pctOfCount}%` }}
-                          />
+                        <div className="mt-1 text-[10px] text-muted-foreground tabular-nums">
+                          {b.count} {b.count === 1 ? "activity" : "activities"}
                         </div>
-                        <span className="text-[10px] tabular-nums text-muted-foreground w-14 text-right shrink-0">
-                          {b.count} acts
-                        </span>
                       </div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground tabular-nums w-10 text-right shrink-0">
-                      {Math.round(pctOfPoints)}%
+                  );
+                })}
+              </div>
+              <div className="flex flex-col items-center justify-center border-l border-border py-4 px-2">
+                <div className="relative" style={{ width: "100%", height: 200 }}>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={85}
+                        innerRadius={50}
+                        strokeWidth={2}
+                        stroke="var(--card)"
+                      >
+                        {pieData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any) => `${Number(value).toFixed(0)} pts`}
+                        contentStyle={{
+                          backgroundColor: "var(--card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          padding: "4px 8px",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <div className="text-xl font-black tabular-nums leading-none">{totalPoints.toFixed(0)}</div>
+                      <div className="text-[10px] font-medium text-muted-foreground mt-0.5">SFUs tilled</div>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+                {farmerOfMonth && (
+                  <div className="w-full border-t border-border pt-3 mt-1 px-2 text-center">
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Farmer of the Month</div>
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <span className="inline-block h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: farmerOfMonth.color }} />
+                      <span className="text-sm font-bold">{farmerOfMonth.name}</span>
+                    </div>
+                    <div className="text-xs tabular-nums text-muted-foreground">
+                      {farmerOfMonth.totalPoints.toFixed(1)} SFUs in {formatMonth(farmerOfMonth.month)}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );

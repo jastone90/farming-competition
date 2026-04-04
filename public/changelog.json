@@ -1,5 +1,25 @@
 [
   {
+    "hash": "c202b86",
+    "date": "2026-04-04",
+    "message": "Remove grid view delete, add sheet view bulk delete, fix users vanishing on filter"
+  },
+  {
+    "hash": "f87e7dc",
+    "date": "2026-04-04",
+    "message": "Add audit log for manual Strava sync, rename Competitor to Farmer, update audit filters"
+  },
+  {
+    "hash": "46905ed",
+    "date": "2026-04-04",
+    "message": "Clean up dead components, extract shared constants/utils, fix lbs bug, add tests"
+  },
+  {
+    "hash": "943bcfb",
+    "date": "2026-04-04",
+    "message": "Add auto-generated changelog page from git history"
+  },
+  {
     "hash": "e9a8003",
     "date": "2026-04-04",
     "message": "Reorganize dashboard and activities layout"

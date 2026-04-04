@@ -7,6 +7,7 @@ export async function GET() {
   const rows = await db
     .select({
       type: activities.type,
+      isIndoor: activities.isIndoor,
       count: sql<number>`count(*)`,
       totalPoints: sql<number>`sum(${activities.modifiedPoints})`,
       totalMiles: sql<number>`sum(${activities.distanceMiles})`,
@@ -15,7 +16,7 @@ export async function GET() {
       totalPoundsLifted: sql<number>`sum(${activities.poundsLifted})`,
     })
     .from(activities)
-    .groupBy(activities.type)
+    .groupBy(activities.type, activities.isIndoor)
     .orderBy(sql`sum(${activities.modifiedPoints}) desc`);
 
   return NextResponse.json(rows);
