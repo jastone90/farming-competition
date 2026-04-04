@@ -30,6 +30,9 @@ const ACTION_OPTIONS = [
   { value: "amendment_withdraw", label: "amendment_withdraw" },
   { value: "vote_cast", label: "vote_cast" },
   { value: "pin_change", label: "pin_change" },
+  { value: "user_create", label: "user_create" },
+  { value: "color_change", label: "color_change" },
+  { value: "strava_sync", label: "strava_sync" },
 ];
 
 function formatDetail(entry: AuditEntry): string {
@@ -45,6 +48,12 @@ function formatDetail(entry: AuditEntry): string {
       return `amendment #${m.amendmentNumber} | ${m.vote}`;
     case "pin_change":
       return "—";
+    case "user_create":
+      return `${m.name} | ${m.color}`;
+    case "color_change":
+      return `${m.oldColor} → ${m.newColor}`;
+    case "strava_sync":
+      return `${m.triggeredBy} | imported ${m.imported ?? 0}, skipped ${m.skipped ?? 0}`;
     default:
       return JSON.stringify(m);
   }

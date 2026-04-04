@@ -4,6 +4,7 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { syncUserActivities } from "@/lib/strava/sync";
+import { logAudit } from "@/lib/audit";
 
 export async function POST() {
   const session = await getSession();
@@ -18,6 +19,20 @@ export async function POST() {
 
   try {
     const result = await syncUserActivities(user);
+
+    await logAudit({
+      userId: session.id,
+      action: "strava_sync",
+      entityType: "activity",
+      metadata: {
+        triggeredBy: "manual",
+        imported: result.imported,
+        skipped: result.skipped,
+        importedTypes: result.importedTypes,
+        skippedTypes: result.skippedTypes,
+      },
+    });
+
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(

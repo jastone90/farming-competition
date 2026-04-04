@@ -148,7 +148,7 @@ export default function SettingsPage() {
         setAddMsg(null);
       }, 1000);
     } else {
-      setAddMsg({ text: data.error || "Failed to add competitor", ok: false });
+      setAddMsg({ text: data.error || "Failed to add farmer", ok: false });
     }
   }
 
@@ -304,7 +304,7 @@ export default function SettingsPage() {
                         onClick={() => { setShowAddModal(true); setAddMsg(null); setNewName(""); setNewUserPin(""); setNewColor(""); }}
                         className="px-2 py-0.5 text-xs font-medium border border-input hover:bg-muted"
                       >
-                        Add Competitor
+                        Add Farmer
                       </button>
                       {user.stravaAthleteId ? (
                         <button
@@ -509,7 +509,7 @@ export default function SettingsPage() {
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowAddModal(false)}>
           <div className="bg-card border border-border shadow-lg w-72 p-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-sm font-bold mb-3">Add Competitor</h2>
+            <h2 className="text-sm font-bold mb-3">Add Farmer</h2>
             <form onSubmit={handleAddCompetitor} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold block mb-1">Name</label>
