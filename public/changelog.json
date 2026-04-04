@@ -1,0 +1,197 @@
+[
+  {
+    "hash": "e9a8003",
+    "date": "2026-04-04",
+    "message": "Reorganize dashboard and activities layout"
+  },
+  {
+    "hash": "a3af523",
+    "date": "2026-04-03",
+    "message": "Add automated daily Strava sync with audit trail"
+  },
+  {
+    "hash": "2beae75",
+    "date": "2026-04-03",
+    "message": "Add personal profile page with stats, records, charts, and season history"
+  },
+  {
+    "hash": "2cf5b58",
+    "date": "2026-04-03",
+    "message": "Update handicap rule naming convention for consistency"
+  },
+  {
+    "hash": "402ecce",
+    "date": "2026-04-03",
+    "message": "Split all-time records into three sections with new records and visual polish"
+  },
+  {
+    "hash": "15e3e40",
+    "date": "2026-04-03",
+    "message": "Add Kidz multiplier (2.5×), seed 2026 data with scoring engine, show engine version in tooltip"
+  },
+  {
+    "hash": "5b11506",
+    "date": "2026-04-03",
+    "message": "Require login to view Amendments and Audit Log pages"
+  },
+  {
+    "hash": "a500de2",
+    "date": "2026-04-03",
+    "message": "Add new competitor feature, change color, and dynamic login"
+  },
+  {
+    "hash": "692c38e",
+    "date": "2026-04-03",
+    "message": "Improve dashboard season progress bar visibility"
+  },
+  {
+    "hash": "1825624",
+    "date": "2026-04-03",
+    "message": "Add Farming Competition DJ music recommendation page"
+  },
+  {
+    "hash": "31c4782",
+    "date": "2026-04-03",
+    "message": "Polish audit log UI and Strava sync button"
+  },
+  {
+    "hash": "c22b623",
+    "date": "2026-04-03",
+    "message": "Add audit log for tracking all user actions with SKETCH detection"
+  },
+  {
+    "hash": "a37b8a4",
+    "date": "2026-04-03",
+    "message": "Add change PIN modal to settings and rename Strava sync button"
+  },
+  {
+    "hash": "63d541f",
+    "date": "2026-04-03",
+    "message": "Fix login not showing user avatar in nav until hard refresh"
+  },
+  {
+    "hash": "002053f",
+    "date": "2026-04-03",
+    "message": "Add amendment withdrawal and wait-for-all-votes resolution"
+  },
+  {
+    "hash": "a2b71c6",
+    "date": "2026-04-03",
+    "message": "Fix points tooltip being clipped at right edge of viewport"
+  },
+  {
+    "hash": "d1e0004",
+    "date": "2026-04-03",
+    "message": "Fix active-rules tests by using in-memory test DB instead of real DB"
+  },
+  {
+    "hash": "f1222f7",
+    "date": "2026-04-02",
+    "message": "Update README.md"
+  },
+  {
+    "hash": "bb07a38",
+    "date": "2026-04-02",
+    "message": "Merge pull request #2 from jastone90/refactor-and-tests"
+  },
+  {
+    "hash": "9aa1606",
+    "date": "2026-04-02",
+    "message": "Simplify manual activity form by removing duration and calories fields"
+  },
+  {
+    "hash": "28e3137",
+    "date": "2026-04-02",
+    "message": "Refactor shared utilities, DRY up codebase, add test coverage"
+  },
+  {
+    "hash": "671e7fd",
+    "date": "2026-04-02",
+    "message": "Merge pull request #1 from jastone90/update-readme"
+  },
+  {
+    "hash": "7c3ee56",
+    "date": "2026-04-02",
+    "message": "Rewrite README with accurate features, scoring, and project structure"
+  },
+  {
+    "hash": "6b2b74a",
+    "date": "2026-04-02",
+    "message": "Remove PINs and user names from README, fix season dates"
+  },
+  {
+    "hash": "9051b46",
+    "date": "2026-04-02",
+    "message": "Add sync reminder comments between scoring-config.ts and seed.ts"
+  },
+  {
+    "hash": "e02055a",
+    "date": "2026-04-02",
+    "message": "Add tracked scoring config with engine versions v1.0–v1.3"
+  },
+  {
+    "hash": "8138948",
+    "date": "2026-04-02",
+    "message": "Fix Strava mapper: remove unsupported activity types, fix season logic"
+  },
+  {
+    "hash": "affd451",
+    "date": "2026-04-02",
+    "message": "Recover and commit scoring engine, dashboard, and test improvements"
+  },
+  {
+    "hash": "7b7e091",
+    "date": "2026-04-02",
+    "message": "Remove seed and personal data files from git tracking"
+  },
+  {
+    "hash": "8b26e14",
+    "date": "2026-04-02",
+    "message": "Add Strava manual sync with year-to-date import and activity type filtering"
+  },
+  {
+    "hash": "a0b2650",
+    "date": "2026-04-02",
+    "message": "Add total elevation to leaderboard API and update dashboard"
+  },
+  {
+    "hash": "32a4fd1",
+    "date": "2026-04-02",
+    "message": "Update scoring engine: new rules, remove calorie/GP/indoor, add swimming"
+  },
+  {
+    "hash": "9775c9f",
+    "date": "2026-04-02",
+    "message": "Remove History tab and clean up dashboard stats row"
+  },
+  {
+    "hash": "490b1a4",
+    "date": "2026-04-02",
+    "message": "Refine dashboard standings: add Hall of Shame, Pts/Act, Miles; remove weekly stats"
+  },
+  {
+    "hash": "b05189d",
+    "date": "2026-04-02",
+    "message": "Add full app UI, dashboard improvements, and historical data seeding"
+  },
+  {
+    "hash": "e363277",
+    "date": "2026-04-01",
+    "message": "Fix Strava mapper returning null for Walk, Hike, Rowing, Yoga, and unknown types"
+  },
+  {
+    "hash": "ae727ad",
+    "date": "2026-04-01",
+    "message": "Add haybailz (weight lifting) scoring: 0.5 SFU per 1000 lbs"
+  },
+  {
+    "hash": "f5000fd",
+    "date": "2026-03-31",
+    "message": "Add integration test suite and fix 4 bugs"
+  },
+  {
+    "hash": "7e166fe",
+    "date": "2026-03-30",
+    "message": "Initial commit from Create Next App"
+  }
+]

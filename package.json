@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run changelog && next build",
+    "changelog": "node --import tsx lib/generate-changelog.ts",
     "start": "next start",
     "lint": "eslint",
     "test": "cd tests && npm test",
