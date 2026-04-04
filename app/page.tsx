@@ -79,6 +79,9 @@ export default function Dashboard() {
   const [breakdown, setBreakdown] = useState<TypeBreakdown[]>([]);
   const [farmerOfMonth, setFarmerOfMonth] = useState<FarmerOfMonth | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   // Fetch all data once on mount
   useEffect(() => {
@@ -225,7 +228,8 @@ export default function Dashboard() {
               </div>
               <div className="flex flex-col items-center justify-center border-l border-border py-4 px-2">
                 <div className="relative" style={{ width: "100%", height: 200 }}>
-                  <ResponsiveContainer width="100%" height={200}>
+                  {mounted && (
+                  <ResponsiveContainer width="100%" height={200} minWidth={0}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -254,6 +258,7 @@ export default function Dashboard() {
                       />
                     </PieChart>
                   </ResponsiveContainer>
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="text-center">
                       <div className="text-xl font-black tabular-nums leading-none">{totalPoints.toFixed(0)}</div>

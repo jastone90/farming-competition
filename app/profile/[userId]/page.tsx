@@ -184,7 +184,7 @@ export default function ProfilePage({
           <div className="p-3">
             {mounted ? (
               <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={300} minWidth={0}>
                   <LineChart
                     data={cumulativeChart.data}
                     margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
@@ -441,7 +441,7 @@ export default function ProfilePage({
         </div>
         <div className="p-3">
           {mounted ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={250} minWidth={0}>
               <BarChart data={filledTrends}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} interval={0} />
