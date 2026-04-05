@@ -205,8 +205,8 @@ function UserMiniTable({
             <tr className="bg-muted/90">
               <th className="border border-border px-1 py-1 text-left font-semibold">Date</th>
               <th className="border border-border px-1 py-1 text-left font-semibold">Type</th>
-              <th className="border border-border px-1 py-1 text-right font-semibold">Mi <span className="font-normal text-muted-foreground">(lbs)</span></th>
-              <th className="border border-border px-1 py-1 text-right font-semibold">Elev</th>
+              <th className="border border-border px-1 py-1 text-right font-semibold">Mi</th>
+              <th className="border border-border px-1 py-1 text-right font-semibold">Elev <span className="font-normal text-muted-foreground">(lbs)</span></th>
               <th className="border border-border px-1 py-1 text-right font-semibold">Pts</th>
             </tr>
           </thead>
@@ -225,10 +225,10 @@ function UserMiniTable({
                   {a.isIndoor && <span className="text-muted-foreground">(i)</span>}
                 </td>
                 <td className="border border-border px-1 py-0.5 text-right tabular-nums">
-                  {a.type === "weight_training" ? numCell(a.poundsLifted, 0) : numCell(a.distanceMiles)}
+                  {numCell(a.distanceMiles)}
                 </td>
                 <td className="border border-border px-1 py-0.5 text-right tabular-nums">
-                  {a.type === "weight_training" ? "" : numCell(a.elevationGainFeet, 0)}
+                  {a.type === "weight_training" ? numCell(a.poundsLifted, 0) : numCell(a.elevationGainFeet, 0)}
                 </td>
                 <PointsCell points={a.modifiedPoints} breakdown={a.pointBreakdown} engineVersion={a.engineVersion} />
               </tr>
