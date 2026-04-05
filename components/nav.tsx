@@ -26,12 +26,12 @@ export function Nav() {
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setDark(isDark);
-    fetch("/api/auth/session")
+    fetch("/api/auth/session", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        if (d.user) setUser(d.user);
+        setUser(d.user || null);
       })
-      .catch(() => {});
+      .catch(() => setUser(null));
   }, []);
 
   function toggleDark() {
@@ -42,7 +42,12 @@ export function Nav() {
   }
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (!res.ok) throw new Error("Logout failed");
+    } catch {
+      // If server logout fails, force reload to re-check session
+    }
     setUser(null);
     window.location.href = "/";
   }
@@ -50,7 +55,7 @@ export function Nav() {
   return (
     <nav className="sticky top-0 z-50 border-b border-stone-200 dark:border-stone-800 bg-card/80 backdrop-blur-sm shadow-sm">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+        <Link href="/activities" className="flex items-center gap-2 font-bold text-lg">
           <span>🌾</span>
           <span className="hidden sm:inline">Farming Competition</span>
         </Link>
