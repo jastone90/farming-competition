@@ -79,9 +79,9 @@ export default function MusicPage() {
   const [statusMsg, setStatusMsg] = useState(SEARCH_MESSAGES[0]);
   const [progress, setProgress] = useState(0);
   const [flickerFast, setFlickerFast] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const emojiIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const emojiIntervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const emojiIdRef = useRef(0);
   const [fallingEmojis, setFallingEmojis] = useState<FallingEmoji[]>([]);
 

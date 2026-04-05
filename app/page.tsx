@@ -455,7 +455,7 @@ export default function Dashboard() {
                   borderLeftColor: records.highestIndividualMonth.color,
                   backgroundColor: `${records.highestIndividualMonth.color}08`,
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${records.highestIndividualMonth.color}30`; }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${records.highestIndividualMonth?.color ?? "#888"}30`; }}
                 onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
               >
                 <div className="text-[10px] text-muted-foreground leading-tight mb-1">
@@ -497,7 +497,7 @@ export default function Dashboard() {
                   borderLeftColor: records.longestDrought.color,
                   backgroundColor: `${records.longestDrought.color}08`,
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${records.longestDrought.color}30`; }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 12px ${records.longestDrought?.color ?? "#888"}30`; }}
                 onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
               >
                 <div className="flex-1 min-w-0">

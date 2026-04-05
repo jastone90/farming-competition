@@ -24,8 +24,8 @@ import {
 import { ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_COLORS } from "@/lib/constants";
 import { MONTH_NAMES, formatMonth, formatDate } from "@/lib/utils";
 
-const TYPE_COLORS = ACTIVITY_TYPE_COLORS;
-const TYPE_LABELS = ACTIVITY_TYPE_LABELS;
+const TYPE_COLORS: Record<string, string> = ACTIVITY_TYPE_COLORS;
+const TYPE_LABELS: Record<string, string> = ACTIVITY_TYPE_LABELS;
 
 const SEASON_COLORS: Record<number, string> = {
   2022: "#6366F1",
