@@ -10,6 +10,66 @@ A full-stack web app for tracking a fitness competition. Features Strava integra
 - **Recharts** for data visualization
 - **Strava OAuth2** for activity sync
 
+## Getting Started
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set up environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and review the variables (see [Environment Variables](#environment-variables) below). The defaults work for local development — the only thing you may want to change is `SESSION_SECRET`.
+
+### 3. Seed the database
+
+```bash
+npm run db:seed
+```
+
+This walks you through an interactive setup:
+- How many farmers (competitors) to create
+- Each farmer's name, 4-digit PIN, and color
+
+The seed script creates the current season and base scoring rules automatically.
+
+### 4. Start the dev server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) and log in with any farmer name + PIN you set during seed.
+
+## Environment Variables
+
+Create a `.env.local` file (or copy `.env.example`):
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | SQLite database path. Default: `file:./farming.db` |
+| `SESSION_SECRET` | Yes | Secret for signing session cookies. Change this from the default. |
+| `NEXT_PUBLIC_APP_URL` | Yes | Your app's public URL. Default: `http://localhost:3000` |
+| `STRAVA_CLIENT_ID` | No | Strava API client ID (from [strava.com/settings/api](https://www.strava.com/settings/api)). Only needed for Strava sync. |
+| `STRAVA_CLIENT_SECRET` | No | Strava API client secret. Only needed for Strava sync. |
+| `STRAVA_WEBHOOK_VERIFY_TOKEN` | No | Random string for Strava webhook verification. |
+| `STRAVA_SYNC_SECRET` | No | Secret for the automated sync cron endpoint (`/api/strava/sync-all`). |
+
+The app works fully without Strava — you can log all activities manually.
+
+## Default Login
+
+Credentials are whatever you set during `npm run db:seed`. Each farmer has a name and a 4-digit PIN.
+
+## Adding More Farmers
+
+Once the app is running, logged-in users can add new farmers from the **Settings** page.
+
 ## Features
 
 ### Dashboard
@@ -37,29 +97,6 @@ OAuth2 flow to connect a Strava account. Manual sync imports activities from the
 | `scoring_engine_versions` | Append-only version log. Tracks version string, summary of changes, and effective date. |
 | `amendments` | Rule change proposals. Number, title, description, proposer, status (voting/approved/rejected/deferred), effective date, season, and voting window. |
 | `votes` | Individual votes on amendments, linked to both the amendment and the voting user. |
-
-## Getting Started
-
-```bash
-npm install
-npm run db:seed
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000). Users and PINs are configured in the seed script.
-
-### Environment Variables
-
-Create a `.env.local` file:
-
-```env
-STRAVA_CLIENT_ID=your_client_id
-STRAVA_CLIENT_SECRET=your_client_secret
-STRAVA_WEBHOOK_VERIFY_TOKEN=your-random-string
-DATABASE_URL=file:./farming.db
-SESSION_SECRET=your-session-secret
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
 
 ## Project Structure
 
@@ -107,7 +144,7 @@ lib/
 |---------|-------------|
 | `npm run dev` | Start dev server |
 | `npm run build` | Production build |
-| `npm run db:seed` | Seed database (users, amendments, scoring rules) |
+| `npm run db:seed` | Interactive database setup (farmers, season, scoring rules) |
 | `npm run db:generate` | Generate Drizzle migrations |
 | `npm run db:push` | Push schema to database |
-| `npm test` | Run test suite (197 tests) |
+| `npm test` | Run test suite |
