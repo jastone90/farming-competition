@@ -42,7 +42,6 @@ yarn-error.log*
 /drizzle
 
 # seed data & history (contains personal info)
-lib/db/seed.ts
 lib/db/seed-history.ts
 /History
 tests/helpers/seed-helpers.ts
