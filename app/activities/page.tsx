@@ -177,9 +177,11 @@ function sortActivities(items: ActivityData[], field: SortField, dir: SortDir) {
 function UserMiniTable({
   user,
   activities,
+  recordIds,
 }: {
   user: UserInfo;
   activities: ActivityData[];
+  recordIds: Set<number>;
 }) {
   const sorted = useMemo(
     () => sortActivities(activities, "activityDate", "desc"),
@@ -223,6 +225,7 @@ function UserMiniTable({
                 <td className="border border-border px-1 py-0.5 whitespace-nowrap">
                   {typeLabels[a.type] || a.type}
                   {a.isIndoor && <span className="text-muted-foreground">(i)</span>}
+                  {recordIds.has(a.id) && <span className="ml-0.5 text-blue-500 text-[10px]" title="All-time record">&#x1F3C5;</span>}
                 </td>
                 <td className="border border-border px-1 py-0.5 text-right tabular-nums">
                   {numCell(a.distanceMiles)}
@@ -274,6 +277,7 @@ export default function ActivitiesPage() {
     decStartIndex: number;
   } | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [recordIds, setRecordIds] = useState<Set<number>>(new Set());
 
   const currentYear = new Date().getFullYear();
   const seasonOptions = Array.from({ length: currentYear - 2022 + 1 }, (_, i) => 2022 + i).reverse();
@@ -326,6 +330,19 @@ export default function ActivitiesPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.user) setCurrentUserId(d.user.id);
+      })
+      .catch(() => {});
+    fetch("/api/leaderboard/records")
+      .then((r) => r.json())
+      .then((d) => {
+        const ids = [
+          d.highestScoring?.activityId,
+          d.longestRide?.activityId,
+          d.longestRun?.activityId,
+          d.mountainGoat?.activityId,
+          d.heaviestHaybailz?.activityId,
+        ].filter(Boolean) as number[];
+        setRecordIds(new Set(ids));
       })
       .catch(() => {});
   }, [loadActivities]);
@@ -659,6 +676,7 @@ export default function ActivitiesPage() {
               key={u.id}
               user={u}
               activities={activitiesByUser.get(u.id) || []}
+              recordIds={recordIds}
             />
           ))}
         </div>

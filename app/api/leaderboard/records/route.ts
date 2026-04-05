@@ -28,6 +28,7 @@ export async function GET() {
   ) {
     let query = db
       .select({
+        id: activities.id,
         userId: activities.userId,
         title: activities.title,
         value: valueCol,
@@ -249,7 +250,7 @@ export async function GET() {
   }
 
   function activityRecord(row: typeof highestScoring) {
-    return row ? buildRecord(row, row.value, { title: row.title, date: row.date }) : null;
+    return row ? buildRecord(row, row.value, { activityId: row.id, title: row.title, date: row.date }) : null;
   }
 
   function seasonRecord(row: typeof mostPointsSeason) {
