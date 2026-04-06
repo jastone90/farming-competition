@@ -273,7 +273,7 @@ export default function ProfilePage({
         <div className="px-2 py-1.5 bg-muted/70 text-xs font-semibold border-b border-border">
           Personal Records
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           {personalRecords.bestActivity && (
             <RecordCard
               color={user.color}
@@ -473,10 +473,8 @@ export default function ProfilePage({
         {seasonSummaries.length === 0 ? (
           <div className="px-2 py-3 text-xs text-muted-foreground text-center">No season data</div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="bg-muted/70">
-                <th className="border border-border px-2 py-1.5 text-left font-semibold">Season</th>
                 <th className="border border-border px-2 py-1.5 text-right font-semibold">Points</th>
                 <th className="border border-border px-2 py-1.5 text-right font-semibold">Rank</th>
                 <th className="border border-border px-2 py-1.5 text-right font-semibold">Acts</th>
@@ -514,6 +512,7 @@ export default function ProfilePage({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

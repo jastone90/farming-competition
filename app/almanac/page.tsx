@@ -226,7 +226,7 @@ export default function Dashboard() {
                   );
                 })}
               </div>
-              <div className="flex flex-col items-center justify-center border-l border-border py-4 px-2">
+              <div className="flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-border py-4 px-2">
                 <div className="relative" style={{ width: "100%", height: 200 }}>
                   {mounted && (
                   <ResponsiveContainer width="100%" height={200} minWidth={0}>
@@ -379,7 +379,7 @@ export default function Dashboard() {
               Single Activity
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <RecordCard
               icon="🏆"
               label="Highest Scoring Activity"
@@ -423,7 +423,7 @@ export default function Dashboard() {
               Season
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <RecordCard
               icon="🥇"
               label="Most Points (Season)"
@@ -547,7 +547,7 @@ export default function Dashboard() {
               Group
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <GroupRecordCard
               icon="🥇"
               label="Most Combined Points (Season)"

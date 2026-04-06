@@ -212,7 +212,8 @@ export default function AmendmentsPage() {
                     </div>
                   </div>
                   {/* Inline vote table */}
-                  <table className="w-full text-xs border-collapse mb-2">
+                  <div className="overflow-x-auto mb-2">
+                  <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr className="bg-muted/50">
                         {allUsers.map((u) => (
@@ -251,6 +252,7 @@ export default function AmendmentsPage() {
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                   {currentUserId && !hasVoted && (
                     <div className="flex gap-2">
                       <button

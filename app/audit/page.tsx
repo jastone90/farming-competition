@@ -159,9 +159,9 @@ export default function AuditPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-lg font-bold">Audit Log</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <select
             value={filterUser}
             onChange={(e) => setFilterUser(e.target.value)}
@@ -208,7 +208,7 @@ export default function AuditPage() {
       ) : filtered.length === 0 ? (
         <p className="text-muted-foreground text-xs font-mono">No sketchy events found.</p>
       ) : (
-        <div className="border border-stone-200 dark:border-stone-800 rounded-md overflow-hidden">
+        <div className="border border-stone-200 dark:border-stone-800 rounded-md overflow-x-auto">
           <table className="w-full text-xs font-mono">
             <thead>
               <tr className="bg-stone-100 dark:bg-stone-900 text-left text-muted-foreground">
