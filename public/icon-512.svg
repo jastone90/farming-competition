@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="80" fill="#d97706"/>
+  <g transform="translate(256,280)" fill="#fef3c7" stroke="#fef3c7">
+    <!-- Tractor body -->
+    <rect x="-53" y="-93" width="120" height="80" rx="10"/>
+    <!-- Cab -->
+    <rect x="-13" y="-147" width="75" height="67" rx="8"/>
+    <!-- Cab window -->
+    <rect x="0" y="-134" width="48" height="37" rx="5" fill="#d97706" stroke="none"/>
+    <!-- Hood -->
+    <rect x="-120" y="-75" width="80" height="48" rx="8"/>
+    <!-- Exhaust pipe -->
+    <rect x="-112" y="-112" width="13" height="42" rx="5"/>
+    <!-- Big rear wheel -->
+    <circle cx="27" cy="13" r="59" fill="none" stroke-width="19"/>
+    <circle cx="27" cy="13" r="21" fill="#d97706" stroke-width="8"/>
+    <!-- Small front wheel -->
+    <circle cx="-101" cy="13" r="37" fill="none" stroke-width="16"/>
+    <circle cx="-101" cy="13" r="13" fill="#d97706" stroke-width="8"/>
+  </g>
+</svg>
