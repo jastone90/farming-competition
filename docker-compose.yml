@@ -9,3 +9,8 @@ services:
       - DATABASE_URL=file:/app/data/farming.db
       - SESSION_SECRET=change-me-to-something-secret
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      # Strava integration (optional — app works without it)
+      # - STRAVA_CLIENT_ID=
+      # - STRAVA_CLIENT_SECRET=
+      # - STRAVA_WEBHOOK_VERIFY_TOKEN=
+      # - STRAVA_SYNC_SECRET=
