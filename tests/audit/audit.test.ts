@@ -410,6 +410,75 @@ describe("audit log - querying and filtering", () => {
 
     expect(limited).toHaveLength(5);
   });
+
+  it("supports offset for pagination", async () => {
+    await createUser(testDb, { name: "Alan" });
+
+    for (let i = 0; i < 10; i++) {
+      await createAuditEntry(testDb, {
+        userId: 1,
+        action: "activity_create",
+        entityType: "activity",
+        createdAt: `2026-03-${String(i + 1).padStart(2, "0")}T10:00:00Z`,
+      });
+    }
+
+    const page1 = await testDb.db
+      .select()
+      .from(auditLog)
+      .orderBy(desc(auditLog.createdAt))
+      .limit(3)
+      .offset(0);
+
+    const page2 = await testDb.db
+      .select()
+      .from(auditLog)
+      .orderBy(desc(auditLog.createdAt))
+      .limit(3)
+      .offset(3);
+
+    expect(page1).toHaveLength(3);
+    expect(page2).toHaveLength(3);
+    // Pages should not overlap
+    const page1Ids = page1.map((e) => e.id);
+    const page2Ids = page2.map((e) => e.id);
+    expect(page1Ids.filter((id) => page2Ids.includes(id))).toHaveLength(0);
+  });
+
+  it("returns empty array when offset exceeds total entries", async () => {
+    await createUser(testDb, { name: "Alan" });
+
+    for (let i = 0; i < 5; i++) {
+      await createAuditEntry(testDb, { userId: 1, action: "activity_create", entityType: "activity" });
+    }
+
+    const results = await testDb.db
+      .select()
+      .from(auditLog)
+      .orderBy(desc(auditLog.createdAt))
+      .limit(10)
+      .offset(100);
+
+    expect(results).toHaveLength(0);
+  });
+
+  it("offset + limit returns correct partial page at end", async () => {
+    await createUser(testDb, { name: "Alan" });
+
+    for (let i = 0; i < 7; i++) {
+      await createAuditEntry(testDb, { userId: 1, action: "activity_create", entityType: "activity" });
+    }
+
+    const lastPage = await testDb.db
+      .select()
+      .from(auditLog)
+      .orderBy(desc(auditLog.createdAt))
+      .limit(5)
+      .offset(5);
+
+    // Only 2 remaining after offset 5 of 7
+    expect(lastPage).toHaveLength(2);
+  });
 });
 
 describe("audit log - metadata integrity", () => {
