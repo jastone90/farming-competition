@@ -115,7 +115,7 @@ Once the app is running, logged-in users can add new farmers from the **Settings
 
 ## Features
 
-### Dashboard
+### Almanac
 Season leaderboard with standings, gap-to-leader stats, weekly pace projections, Hall of Fame (past champions), Hall of Shame (most off-season points), and all-time records.
 
 ### Activities
@@ -129,7 +129,7 @@ OAuth2 flow to connect a Strava account. Manual sync imports activities from the
 
 ## Database Schema
 
-7 tables defined in `lib/db/schema.ts` using Drizzle ORM:
+8 tables defined in `lib/db/schema.ts` using Drizzle ORM:
 
 | Table | Description |
 |-------|-------------|
@@ -140,32 +140,43 @@ OAuth2 flow to connect a Strava account. Manual sync imports activities from the
 | `scoring_engine_versions` | Append-only version log. Tracks version string, summary of changes, and effective date. |
 | `amendments` | Rule change proposals. Number, title, description, proposer, status (voting/approved/rejected/deferred), effective date, season, and voting window. |
 | `votes` | Individual votes on amendments, linked to both the amendment and the voting user. |
+| `audit_log` | Activity audit trail. Tracks user actions (create, delete, sync, vote, PIN changes) with timestamps. |
 
 ## Project Structure
 
 ```
 app/
-  page.tsx                  Dashboard
+  page.tsx                  Redirects to /activities
   activities/page.tsx       Activities (grid/sheet views)
+  almanac/page.tsx          Leaderboard, records, Hall of Fame/Shame
   amendments/page.tsx       Amendment proposals & voting
-  settings/page.tsx         Strava connection, scoring rules display
+  audit/page.tsx            Audit log viewer
+  changelog/page.tsx        Changelog viewer
   login/page.tsx            PIN-based login
+  music/page.tsx            Music page
+  profile/[userId]/page.tsx User profile
+  settings/page.tsx         Strava connection, scoring rules display
   api/
     activities/             CRUD + scoring on create
-    leaderboard/            Standings, cumulative points, all-time records
     amendments/             Proposals, voting
+    audit/                  Audit log access
+    auth/                   Login, logout, session
+    leaderboard/            Standings, cumulative points, all-time records
+    profile/                User profile by ID
     scoring/                Calculate, rules, engine versions
     strava/                 OAuth, sync, webhook
-    auth/                   Login, logout, session
+    users/                  User management
 components/
   cumulative-chart.tsx      Season-long points chart per user
+  footer.tsx                Footer with links
   manual-entry-form.tsx     Activity entry with live score preview
   nav.tsx                   Navigation + dark mode toggle
-  trend-chart.tsx           Trend visualization
+  score-breakdown.tsx       Score visualization
 lib/
   db/
-    schema.ts               7 Drizzle tables
+    schema.ts               8 Drizzle tables
     scoring-config.ts       Scoring rules & engine versions (source of truth)
+    seed.ts                 Interactive seed script
   scoring/
     engine.ts               Applies rules, handles off-season
     active-rules.ts         Shared DB query for active rules by season
@@ -173,12 +184,18 @@ lib/
     types.ts                TypeScript interfaces
   strava/
     client.ts               Strava API client with token refresh
+    daily-sync-scheduler.ts Scheduled daily sync
     mapper.ts               Strava -> internal activity format
+    sync.ts                 Activity sync logic
     token-manager.ts        Shared token refresh + DB persist
     webhook.ts              Real-time event handler
   utils/
     season.ts               Shared season calculation
+  audit.ts                  Audit logging
   auth.ts                   Cookie-based session management
+  constants.ts              Activity type labels & colors
+  generate-changelog.ts     Build-time changelog generation
+  utils.ts                  General utilities
 ```
 
 ## Scripts
