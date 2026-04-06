@@ -1,0 +1,11 @@
+services:
+  farming:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./farming.db:/app/data/farming.db
+    environment:
+      - DATABASE_URL=file:/app/data/farming.db
+      - SESSION_SECRET=change-me-to-something-secret
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000

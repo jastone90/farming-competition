@@ -1,5 +1,75 @@
 [
   {
+    "hash": "ec8040c",
+    "date": "2026-04-05",
+    "message": "Redirect root to /activities and move Almanac to /almanac"
+  },
+  {
+    "hash": "8d24813",
+    "date": "2026-04-05",
+    "message": "Track interactive seed script in git"
+  },
+  {
+    "hash": "7e48799",
+    "date": "2026-04-05",
+    "message": "Improve README with interactive seed docs and onboarding sections"
+  },
+  {
+    "hash": "b802dc0",
+    "date": "2026-04-05",
+    "message": "Fix logout caching bug and point logo link to activities page"
+  },
+  {
+    "hash": "fc9e5c7",
+    "date": "2026-04-05",
+    "message": "Fix TypeScript strict mode errors for Next.js 16 build"
+  },
+  {
+    "hash": "bf4d2ea",
+    "date": "2026-04-05",
+    "message": "Add blue ribbon icon for record-holding activities in grid view"
+  },
+  {
+    "hash": "ba3ec68",
+    "date": "2026-04-05",
+    "message": "Move Haybailz lbs display to Elev column, keep Miles column clean"
+  },
+  {
+    "hash": "85e4339",
+    "date": "2026-04-05",
+    "message": "Show pounds lifted instead of miles/elevation for Haybailz in grid view"
+  },
+  {
+    "hash": "5012b6f",
+    "date": "2026-04-04",
+    "message": "Add Off Season card to Scoring Engine showing Dec 26-31 zero points rule"
+  },
+  {
+    "hash": "74ad524",
+    "date": "2026-04-04",
+    "message": "Move Audit Log link from nav bar to footer alongside Changelog"
+  },
+  {
+    "hash": "b56e830",
+    "date": "2026-04-04",
+    "message": "Rename Dashboard nav link to Almanac and move it after Amendments"
+  },
+  {
+    "hash": "f7bb880",
+    "date": "2026-04-04",
+    "message": "Fix Recharts width/height -1 console warnings"
+  },
+  {
+    "hash": "4319dfd",
+    "date": "2026-04-04",
+    "message": "Overhaul settings page: card layout for Account, amber-tinted Scoring Engine container"
+  },
+  {
+    "hash": "e848cb7",
+    "date": "2026-04-04",
+    "message": "Add farming breakdown indoor split, pie chart, and farmer of the month"
+  },
+  {
     "hash": "c202b86",
     "date": "2026-04-04",
     "message": "Remove grid view delete, add sheet view bulk delete, fix users vanishing on filter"

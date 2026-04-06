@@ -10,7 +10,38 @@ A full-stack web app for tracking a fitness competition. Features Strava integra
 - **Recharts** for data visualization
 - **Strava OAuth2** for activity sync
 
-## Getting Started
+## Getting Started (Docker)
+
+The easiest way to run this. You just need [Docker](https://docs.docker.com/get-docker/) installed.
+
+### 1. Get the code and database
+
+```bash
+git clone <repo-url>
+cd farming-competition
+```
+
+Drop the `farming.db` file into the project root (same folder as `docker-compose.yml`).
+
+### 2. Run it
+
+```bash
+docker compose up --build
+```
+
+That's it. Open [http://localhost:3000](http://localhost:3000).
+
+The database is mounted from your local file, so your data persists even if the container is removed.
+
+To stop it: `Ctrl+C` or `docker compose down`.
+
+To run in the background: `docker compose up --build -d`.
+
+> **Optional:** Edit `docker-compose.yml` to change `SESSION_SECRET` or add Strava credentials.
+
+---
+
+## Getting Started (Local Development)
 
 ### 1. Install dependencies
 
