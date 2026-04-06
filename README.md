@@ -39,6 +39,18 @@ To run in the background: `docker compose up --build -d`.
 
 > **Optional:** Edit `docker-compose.yml` to change `SESSION_SECRET` or add Strava credentials.
 
+### Updating the app
+
+When someone pushes new code, the person hosting just needs to pull and rebuild:
+
+```bash
+cd farming-competition
+git pull
+docker compose up --build -d
+```
+
+That pulls the latest code, rebuilds the image, and restarts the container. Your `farming.db` data is untouched — only the app code changes.
+
 ---
 
 ## Getting Started (Local Development)
