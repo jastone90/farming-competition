@@ -15,7 +15,7 @@ interface ManualEntryFormProps {
 }
 
 export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
-  const [type, setType] = useState("run");
+  const [type, setType] = useState("weight_training");
   const [title, setTitle] = useState("");
   const [distance, setDistance] = useState("");
   const [elevation, setElevation] = useState("");
