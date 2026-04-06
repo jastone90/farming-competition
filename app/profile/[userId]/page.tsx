@@ -475,6 +475,9 @@ export default function ProfilePage({
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-muted/70">
+                <th className="border border-border px-2 py-1.5 text-left font-semibold">Season</th>
                 <th className="border border-border px-2 py-1.5 text-right font-semibold">Points</th>
                 <th className="border border-border px-2 py-1.5 text-right font-semibold">Rank</th>
                 <th className="border border-border px-2 py-1.5 text-right font-semibold">Acts</th>
