@@ -111,7 +111,11 @@ export default function AuditPage() {
   const [filterAction, setFilterAction] = useState("");
   const [sketchOnly, setSketchOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [authed, setAuthed] = useState(false);
+
+  const PAGE_SIZE = 100;
 
   const filtered = sketchOnly ? entries.filter((e) => e.isSketch) : entries;
 
@@ -120,16 +124,36 @@ export default function AuditPage() {
     const params = new URLSearchParams();
     if (filterUser) params.set("userId", filterUser);
     if (filterAction) params.set("action", filterAction);
-    params.set("limit", "200");
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", "0");
 
     fetch(`/api/audit?${params}`)
       .then((r) => r.json())
       .then((data) => {
         setEntries(data);
+        setHasMore(data.length === PAGE_SIZE);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [filterUser, filterAction]);
+
+  function loadMore() {
+    setLoadingMore(true);
+    const params = new URLSearchParams();
+    if (filterUser) params.set("userId", filterUser);
+    if (filterAction) params.set("action", filterAction);
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String(entries.length));
+
+    fetch(`/api/audit?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setEntries((prev) => [...prev, ...data]);
+        setHasMore(data.length === PAGE_SIZE);
+        setLoadingMore(false);
+      })
+      .catch(() => setLoadingMore(false));
+  }
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -256,6 +280,17 @@ export default function AuditPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {!loading && entries.length > 0 && (
+        <div className="mt-3 text-center">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore || !hasMore}
+            className="px-4 py-1.5 text-xs font-medium font-mono border border-stone-300 dark:border-stone-700 bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-default"
+          >
+            {loadingMore ? "Loading..." : hasMore ? "Load more" : "All events loaded"}
+          </button>
         </div>
       )}
     </div>

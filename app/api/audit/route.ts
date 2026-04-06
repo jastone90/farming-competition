@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   const userId = url.searchParams.get("userId");
   const action = url.searchParams.get("action");
   const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+  const offset = parseInt(url.searchParams.get("offset") || "0", 10);
 
   const conditions = [];
   if (userId) conditions.push(eq(auditLog.userId, parseInt(userId)));
@@ -44,7 +45,8 @@ export async function GET(request: Request) {
     .innerJoin(users, eq(auditLog.userId, users.id))
     .where(where)
     .orderBy(desc(auditLog.createdAt))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
 
   const parsed = rows.map((r) => ({
     ...r,
