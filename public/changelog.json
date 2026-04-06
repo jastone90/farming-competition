@@ -1,5 +1,70 @@
 [
   {
+    "hash": "6a4f38d",
+    "date": "2026-04-06",
+    "message": "Skip changelog generation in Docker build"
+  },
+  {
+    "hash": "7b9c92a",
+    "date": "2026-04-06",
+    "message": "Fix login session not persisting over HTTP"
+  },
+  {
+    "hash": "1de5b3a",
+    "date": "2026-04-06",
+    "message": "Add pagination tests for audit log offset/limit queries"
+  },
+  {
+    "hash": "f910641",
+    "date": "2026-04-06",
+    "message": "Add paginated loading to audit log with Load More button"
+  },
+  {
+    "hash": "99566fe",
+    "date": "2026-04-06",
+    "message": "Default manual entry activity type to Haybailz"
+  },
+  {
+    "hash": "6330428",
+    "date": "2026-04-06",
+    "message": "Fix broken JSX in profile page (restore missing thead/tr/th)"
+  },
+  {
+    "hash": "d56f970",
+    "date": "2026-04-06",
+    "message": "Fix mobile responsiveness across remaining pages"
+  },
+  {
+    "hash": "370a42e",
+    "date": "2026-04-06",
+    "message": "Improve mobile responsiveness on activities page"
+  },
+  {
+    "hash": "e4de9cc",
+    "date": "2026-04-06",
+    "message": "Clarify STRAVA_SYNC_SECRET is optional (built-in scheduler doesn't need it)"
+  },
+  {
+    "hash": "ed66e0a",
+    "date": "2026-04-06",
+    "message": "Add commented-out Strava env vars to docker-compose.yml"
+  },
+  {
+    "hash": "f8d48e1",
+    "date": "2026-04-06",
+    "message": "Fix outdated README: update table count, project structure, and features"
+  },
+  {
+    "hash": "7914ffa",
+    "date": "2026-04-06",
+    "message": "Add update instructions to Docker section of README"
+  },
+  {
+    "hash": "b044c72",
+    "date": "2026-04-06",
+    "message": "Add Docker support for containerized deployment"
+  },
+  {
     "hash": "ec8040c",
     "date": "2026-04-05",
     "message": "Redirect root to /activities and move Almanac to /almanac"
