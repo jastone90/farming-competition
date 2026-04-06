@@ -449,7 +449,7 @@ export default function ActivitiesPage() {
 
   return (
     <div className="px-4 py-4 max-w-full">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold">Activities</h1>
           <div className="flex items-center gap-1">
@@ -477,11 +477,11 @@ export default function ActivitiesPage() {
               &gt;
             </button>
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground hidden sm:inline">
             Jan 1 – Dec 25
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* View mode toggle */}
           <div className="flex gap-0 border border-border">
             <button
@@ -568,7 +568,7 @@ export default function ActivitiesPage() {
         const lbTotalMiles = leaderboard.reduce((s, l) => s + l.totalMiles, 0);
         const lbTotalElevation = leaderboard.reduce((s, l) => s + l.totalElevation, 0);
         return (
-          <div className="border border-border mb-4">
+          <div className="overflow-x-auto border border-border mb-4">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-muted/70">
@@ -670,7 +670,7 @@ export default function ActivitiesPage() {
         </div>
       ) : viewMode === "grid" ? (
         /* ===== GRID VIEW: 4 side-by-side tables ===== */
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {users.map((u) => (
             <UserMiniTable
               key={u.id}
@@ -683,7 +683,7 @@ export default function ActivitiesPage() {
       ) : (
         /* ===== SHEET VIEW: single table with tabs ===== */
         <>
-          <div className="flex items-end gap-0 border-b border-border mb-0">
+          <div className="flex items-end gap-0 border-b border-border mb-0 overflow-x-auto">
             <button
               onClick={() => setActiveTab("all")}
               className={`px-3 py-1.5 text-xs font-medium border border-b-0 transition-colors -mb-px ${
