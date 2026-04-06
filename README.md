@@ -101,7 +101,7 @@ Create a `.env.local` file (or copy `.env.example`):
 | `STRAVA_CLIENT_ID` | No | Strava API client ID (from [strava.com/settings/api](https://www.strava.com/settings/api)). Only needed for Strava sync. |
 | `STRAVA_CLIENT_SECRET` | No | Strava API client secret. Only needed for Strava sync. |
 | `STRAVA_WEBHOOK_VERIFY_TOKEN` | No | Random string for Strava webhook verification. |
-| `STRAVA_SYNC_SECRET` | No | Secret for the automated sync cron endpoint (`/api/strava/sync-all`). |
+| `STRAVA_SYNC_SECRET` | No | Secret for the `/api/strava/sync-all` endpoint. Only needed if calling that endpoint from an external cron job — the app has a built-in daily sync scheduler that doesn't require this. |
 
 The app works fully without Strava — you can log all activities manually.
 

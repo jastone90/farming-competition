@@ -13,4 +13,4 @@ services:
       # - STRAVA_CLIENT_ID=
       # - STRAVA_CLIENT_SECRET=
       # - STRAVA_WEBHOOK_VERIFY_TOKEN=
-      # - STRAVA_SYNC_SECRET=
+      # - STRAVA_SYNC_SECRET=  # only needed if using an external cron job
