@@ -26,13 +26,16 @@ export function Nav() {
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setDark(isDark);
+  }, []);
+
+  useEffect(() => {
     fetch("/api/auth/session", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         setUser(d.user || null);
       })
       .catch(() => setUser(null));
-  }, []);
+  }, [pathname]);
 
   function toggleDark() {
     const next = !dark;
