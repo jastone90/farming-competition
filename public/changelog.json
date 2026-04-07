@@ -1,5 +1,20 @@
 [
   {
+    "hash": "2557946",
+    "date": "2026-04-07",
+    "message": "Regenerate package-lock.json against public npm registry"
+  },
+  {
+    "hash": "8d7bd40",
+    "date": "2026-04-06",
+    "message": "Update package-lock.json and changelog.json"
+  },
+  {
+    "hash": "185612d",
+    "date": "2026-04-06",
+    "message": "Add PWA support with manifest, service worker, and tractor app icon"
+  },
+  {
     "hash": "76506c5",
     "date": "2026-04-06",
     "message": "Use npm install instead of npm ci in Dockerfile for compatibility"
