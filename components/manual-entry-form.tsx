@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScoreBreakdown } from "./score-breakdown";
 import { ACTIVITY_TYPE_LABELS } from "@/lib/constants";
+import type { Suggestion } from "@/lib/suggestions";
 
 const activityTypes = Object.entries(ACTIVITY_TYPE_LABELS).map(([value, label]) => ({
   value,
   label,
 }));
+
+function summaryLine(s: Suggestion): string {
+  const parts: string[] = [ACTIVITY_TYPE_LABELS[s.type] ?? s.type];
+  if (s.distanceMiles != null) parts.push(`${s.distanceMiles}mi`);
+  if (s.elevationGainFeet != null) parts.push(`${s.elevationGainFeet}ft`);
+  if (s.poundsLifted != null) parts.push(`${s.poundsLifted}lb`);
+  parts.push(s.isIndoor ? "indoor" : "outdoor");
+  if (s.withChild) parts.push("with child");
+  return parts.join(" · ");
+}
 
 interface ManualEntryFormProps {
   onClose: () => void;
@@ -30,6 +41,39 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/activities/suggestions");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setSuggestions(data.suggestions ?? []);
+      } catch {
+        // Ignore — suggestions are a nicety, not required for the form to work.
+      } finally {
+        if (!cancelled) setSuggestionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function applySuggestion(s: Suggestion) {
+    setType(s.type);
+    setTitle(s.title);
+    setDistance(s.distanceMiles != null ? String(s.distanceMiles) : "");
+    setElevation(s.elevationGainFeet != null ? String(s.elevationGainFeet) : "");
+    setPoundsLifted(s.poundsLifted != null ? String(s.poundsLifted) : "");
+    setIsIndoor(s.isIndoor);
+    setWithChild(s.withChild);
+    setPreview(null);
+    // date intentionally untouched
+  }
 
   async function handlePreview() {
     setError("");
@@ -226,6 +270,38 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
               {saving ? "Saving..." : "Save Activity"}
             </button>
           </div>
+
+          {!suggestionsLoading && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-2">
+                Suggested
+              </p>
+              {suggestions.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  Log a few activities and they&apos;ll show up here for one-click reuse.
+                </p>
+              ) : (
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-border bg-stone-50 dark:bg-stone-900 p-1 space-y-0.5">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => applySuggestion(s)}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
+                    >
+                      <span className="font-medium truncate">{s.title}</span>
+                      <span className="text-muted-foreground truncate">
+                        · {summaryLine(s)}
+                      </span>
+                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                        ×{s.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
