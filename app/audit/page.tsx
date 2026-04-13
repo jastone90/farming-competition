@@ -40,7 +40,7 @@ function formatDetail(entry: AuditEntry): string {
   switch (entry.action) {
     case "activity_create":
     case "activity_delete":
-      return `${m.title} | ${m.type} | ${m.activityDate} | ${typeof m.points === "number" ? m.points.toFixed(2) : "0"} SFUs${m.isIndoor ? " | indoor" : ""}`;
+      return `${m.title} | ${m.type} | ${m.activityDate} | ${typeof m.points === "number" ? m.points.toFixed(2) : "0"} SFUs${m.isIndoor ? " | 🏠" : ""}`;
     case "amendment_propose":
     case "amendment_withdraw":
       return `#${m.number} ${m.title}`;

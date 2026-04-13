@@ -15,8 +15,8 @@ function summaryLine(s: Suggestion): string {
   if (s.distanceMiles != null) parts.push(`${s.distanceMiles}mi`);
   if (s.elevationGainFeet != null) parts.push(`${s.elevationGainFeet}ft`);
   if (s.poundsLifted != null) parts.push(`${s.poundsLifted}lb`);
-  parts.push(s.isIndoor ? "indoor" : "outdoor");
-  if (s.withChild) parts.push("with child");
+  parts.push(s.isIndoor ? "🏠" : "outdoor");
+  if (s.withChild) parts.push("🫃");
   return parts.join(" · ");
 }
 
