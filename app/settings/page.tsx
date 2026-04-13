@@ -31,6 +31,7 @@ export default function SettingsPage() {
   const [versions, setVersions] = useState<EngineVersion[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [exportingDb, setExportingDb] = useState(false);
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [pinMsg, setPinMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -91,6 +92,25 @@ export default function SettingsPage() {
     } else {
       const data = await res.json();
       setSyncResult(data.error || "Sync failed");
+    }
+  }
+
+  async function handleExportDb() {
+    setExportingDb(true);
+    try {
+      const res = await fetch("/api/export/db");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "farming.db";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // download failed silently
+    } finally {
+      setExportingDb(false);
     }
   }
 
@@ -317,6 +337,13 @@ export default function SettingsPage() {
                         Connect Strava
                       </a>
                     )}
+                    <button
+                      onClick={handleExportDb}
+                      disabled={exportingDb}
+                      className="px-2.5 py-1 text-xs font-medium border border-input rounded hover:bg-muted disabled:opacity-50"
+                    >
+                      {exportingDb ? "Exporting..." : "Export .db"}
+                    </button>
                     {syncResult && (
                       <span className="text-muted-foreground">{syncResult}</span>
                     )}
