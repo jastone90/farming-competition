@@ -224,7 +224,8 @@ function UserMiniTable({
                 </td>
                 <td className="border border-border px-1 py-0.5 whitespace-nowrap">
                   {typeLabels[a.type] || a.type}
-                  {a.isIndoor && <span className="text-muted-foreground">(i)</span>}
+                  {a.isIndoor && <span className="ml-1" title="Indoor">🏠</span>}
+                  {a.withChild && <span className="ml-1" title="With child">🫃</span>}
                   {recordIds.has(a.id) && <span className="ml-0.5 text-blue-500 text-[10px]" title="All-time record">&#x1F3C5;</span>}
                 </td>
                 <td className="border border-border px-1 py-0.5 text-right tabular-nums">
@@ -790,11 +791,8 @@ export default function ActivitiesPage() {
                     )}
                     <td className="border border-border px-2 py-1 whitespace-nowrap">
                       {typeLabels[a.type] || a.type}
-                      {a.isIndoor && (
-                        <span className="text-muted-foreground ml-1" title="Indoor">
-                          (i)
-                        </span>
-                      )}
+                      {a.isIndoor && <span className="ml-1" title="Indoor">🏠</span>}
+                      {a.withChild && <span className="ml-1" title="With child">🫃</span>}
                     </td>
                     <td className="border border-border px-2 py-1 max-w-[200px] truncate" title={a.title}>
                       {a.title}
