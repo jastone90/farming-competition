@@ -11,6 +11,7 @@ function makeStrava(overrides: Record<string, unknown> = {}) {
     total_elevation_gain: 100, // 100 meters
     calories: 500,
     start_date: "2026-03-15T10:00:00Z",
+    start_date_local: "2026-03-15T10:00:00Z",
     ...overrides,
   };
 }
@@ -116,17 +117,17 @@ describe("Strava mapper — unit conversions", () => {
 
 describe("Strava mapper — season calculation", () => {
   it("January activity belongs to current year (season = calendar year)", () => {
-    const result = mapStravaActivity(makeStrava({ start_date: "2026-01-15T10:00:00Z" }));
+    const result = mapStravaActivity(makeStrava({ start_date_local: "2026-01-15T10:00:00Z" }));
     expect(result!.season).toBe(2026);
   });
 
   it("February activity belongs to current year season", () => {
-    const result = mapStravaActivity(makeStrava({ start_date: "2026-02-01T10:00:00Z" }));
+    const result = mapStravaActivity(makeStrava({ start_date_local: "2026-02-01T10:00:00Z" }));
     expect(result!.season).toBe(2026);
   });
 
   it("December activity belongs to current year season", () => {
-    const result = mapStravaActivity(makeStrava({ start_date: "2026-12-31T10:00:00Z" }));
+    const result = mapStravaActivity(makeStrava({ start_date_local: "2026-12-31T10:00:00Z" }));
     expect(result!.season).toBe(2026);
   });
 });
