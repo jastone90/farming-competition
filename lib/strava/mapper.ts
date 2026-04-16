@@ -22,6 +22,7 @@ interface StravaActivity {
   total_elevation_gain: number; // meters
   calories?: number;
   start_date: string;
+  start_date_local: string;
 }
 
 export function mapStravaActivity(strava: StravaActivity) {
@@ -47,8 +48,11 @@ export function mapStravaActivity(strava: StravaActivity) {
   const durationMinutes = strava.moving_time / 60;
   const caloriesBurned = strava.calories || null;
 
-  const actDate = new Date(strava.start_date);
-  const season = getSeasonForDate(actDate);
+  // Strava's start_date_local is an ISO string with a trailing "Z" but
+  // actually represents the activity's local wall-clock time. Take the
+  // date portion directly to avoid UTC conversion drift near midnight.
+  const activityDate = strava.start_date_local.slice(0, 10);
+  const season = getSeasonForDate(activityDate);
 
   return {
     stravaActivityId: String(strava.id),
@@ -61,7 +65,7 @@ export function mapStravaActivity(strava: StravaActivity) {
       ? Math.round(elevationGainFeet * 10) / 10
       : null,
     caloriesBurned,
-    activityDate: actDate.toISOString().split("T")[0],
+    activityDate,
     season,
   };
 }

@@ -33,7 +33,7 @@ export function ManualEntryForm({ onClose, onSaved }: ManualEntryFormProps) {
   const [poundsLifted, setPoundsLifted] = useState("");
   const [isIndoor, setIsIndoor] = useState(false);
   const [withChild, setWithChild] = useState(false);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(new Date().toLocaleDateString("en-CA"));
   const [preview, setPreview] = useState<{
     rawPoints: number;
     modifiedPoints: number;
