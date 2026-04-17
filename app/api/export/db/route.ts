@@ -29,7 +29,7 @@ export async function GET() {
     );
   }
 
-  return new Response(fileBuffer, {
+  return new Response(new Uint8Array(fileBuffer), {
     headers: {
       "Content-Type": "application/x-sqlite3",
       "Content-Disposition": 'attachment; filename="farming.db"',
